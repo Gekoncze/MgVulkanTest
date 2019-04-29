@@ -1,0 +1,2 @@
+/home/me/Apps/glslang/bin/glslangValidator -S vert -V testVert.glsl -o testVert.spv
+/home/me/Apps/glslang/bin/glslangValidator -S frag -V testFrag.glsl -o testFrag.spv
