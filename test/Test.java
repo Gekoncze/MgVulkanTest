@@ -8,8 +8,8 @@ import java.awt.image.BufferedImage;
 
 
 public class Test {
-    private static final int IMAGE_WIDTH = 640;
-    private static final int IMAGE_HEIGHT = 480;
+    private static final int FRAMEBUFFER_WIDTH = 640;
+    private static final int FRAMEBUFFER_HEIGHT = 480;
 
     public static void main(String[] args) {
         test();
@@ -77,7 +77,7 @@ public class Test {
         VkInstance instance = new VkInstance();
         vk.vkCreateInstanceP(instanceCreateInfo, null, instance);
         vk.setInstance(instance);
-        System.out.println("Instance created successfully!");
+        System.out.println("Instance created successfully! (" + instance + ")");
         System.out.println();
 
         ////////////////////
@@ -89,7 +89,7 @@ public class Test {
 
         VkDebugReportCallbackEXT debugReport = new VkDebugReportCallbackEXT();
         vk.vkCreateDebugReportCallbackEXTP(instance, reportCallbackCreateInfo, null, debugReport);
-        System.out.println("Debug report created successfully!");
+        System.out.println("Debug report created successfully! (" + debugReport + ")");
         System.out.println();
 
         ///////////////////////
@@ -153,7 +153,7 @@ public class Test {
 
         VkDevice device = new VkDevice();
         vk.vkCreateDeviceP(selectedPhysicalDevice, deviceCreateInfo, null, device);
-        System.out.println("Logical device created successfully!");
+        System.out.println("Logical device created successfully! (" + device + ")");
         System.out.println();
 
         /////////////
@@ -162,60 +162,108 @@ public class Test {
         VkQueue queue = new VkQueue();
         vk.vkGetDeviceQueue(device, 0, 0, queue);
 
-        /////////////
-        /// IMAGE ///
-        /////////////
-        VkImageCreateInfo imageCreateInfo = new VkImageCreateInfo();
-        imageCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
-        imageCreateInfo.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
-        imageCreateInfo.setExtent(new VkExtent3D(IMAGE_WIDTH, IMAGE_HEIGHT, 1));
-        imageCreateInfo.setArrayLayers(1);
-        imageCreateInfo.setMipLevels(1);
-        imageCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
-        imageCreateInfo.setTiling(VK_IMAGE_TILING_LINEAR);
-        imageCreateInfo.setUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-        imageCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        imageCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+        //////////////////////////
+        /// FRAMEBUFFER IMAGES ///
+        //////////////////////////
+        int framebufferColorImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        int framebufferDepthImageFormat = VK_FORMAT_D32_SFLOAT;
 
-        VkImage image = new VkImage();
-        vk.vkCreateImageP(device, imageCreateInfo, null, image);
-        System.out.println("Image created successfully!");
+        VkImageCreateInfo colorImageCreateInfo = new VkImageCreateInfo();
+        colorImageCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
+        colorImageCreateInfo.setFormat(framebufferColorImageFormat);
+        colorImageCreateInfo.setExtent(new VkExtent3D(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 1));
+        colorImageCreateInfo.setArrayLayers(1);
+        colorImageCreateInfo.setMipLevels(1);
+        colorImageCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
+        colorImageCreateInfo.setTiling(VK_IMAGE_TILING_LINEAR);
+        colorImageCreateInfo.setUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        colorImageCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        colorImageCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+
+        VkImageCreateInfo depthImageCreateInfo = new VkImageCreateInfo();
+        depthImageCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
+        depthImageCreateInfo.setFormat(framebufferDepthImageFormat);
+        depthImageCreateInfo.setExtent(new VkExtent3D(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 1));
+        depthImageCreateInfo.setArrayLayers(1);
+        depthImageCreateInfo.setMipLevels(1);
+        depthImageCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
+        depthImageCreateInfo.setTiling(VK_IMAGE_TILING_OPTIMAL);
+        depthImageCreateInfo.setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        depthImageCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        depthImageCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+
+        VkImage colorImage = new VkImage();
+        vk.vkCreateImageP(device, colorImageCreateInfo, null, colorImage);
+
+        VkImage depthImage = new VkImage();
+        vk.vkCreateImageP(device, depthImageCreateInfo, null, depthImage);
+
+        System.out.println("Framebuffer images created successfully! (" + colorImage + ") (" + depthImage + ")");
         System.out.println();
 
-        /////////////////////
-        /// DEVICE MEMORY ///
-        /////////////////////
-        VkMemoryRequirements imageMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetImageMemoryRequirements(device, image, imageMemoryRequirements);
+        ///////////////////////////////////////
+        /// FRAMEBUFFER IMAGE DEVICE MEMORY ///
+        ///////////////////////////////////////
+        VkMemoryRequirements colorImageMemoryRequirements = new VkMemoryRequirements();
+        vk.vkGetImageMemoryRequirements(device, colorImage, colorImageMemoryRequirements);
 
-        VkMemoryAllocateInfo imageMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        imageMemoryAllocateInfo.setMemoryTypeIndex(0);
-        imageMemoryAllocateInfo.setAllocationSize(imageMemoryRequirements.getSize());
-        VkDeviceMemory imageMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, imageMemoryAllocateInfo, null, imageMemory);
-        System.out.println("Image memory allocated successfully!");
+        VkMemoryAllocateInfo colorImageMemoryAllocateInfo = new VkMemoryAllocateInfo();
+        colorImageMemoryAllocateInfo.setMemoryTypeIndex(0);
+        colorImageMemoryAllocateInfo.setAllocationSize(colorImageMemoryRequirements.getSize());
+
+        VkDeviceMemory colorImageMemory = new VkDeviceMemory();
+        vk.vkAllocateMemoryP(device, colorImageMemoryAllocateInfo, null, colorImageMemory);
+
+        VkMemoryRequirements depthImageMemoryRequirements = new VkMemoryRequirements();
+        vk.vkGetImageMemoryRequirements(device, depthImage, depthImageMemoryRequirements);
+
+        VkMemoryAllocateInfo depthImageMemoryAllocateInfo = new VkMemoryAllocateInfo();
+        depthImageMemoryAllocateInfo.setMemoryTypeIndex(0);
+        depthImageMemoryAllocateInfo.setAllocationSize(depthImageMemoryRequirements.getSize());
+
+        VkDeviceMemory depthImageMemory = new VkDeviceMemory();
+        vk.vkAllocateMemoryP(device, depthImageMemoryAllocateInfo, null, depthImageMemory);
+
+        System.out.println("Framebuffer image memory allocated successfully! (" + colorImageMemory + ") (" + depthImageMemory + ")");
         System.out.println();
 
-        vk.vkBindImageMemoryP(device, image, imageMemory, 0);
-        System.out.println("Image memory bind successfully!");
+        vk.vkBindImageMemoryP(device, colorImage, colorImageMemory, 0);
+        vk.vkBindImageMemoryP(device, depthImage, depthImageMemory, 0);
+        System.out.println("Framebuffer image memory bind successfully!");
         System.out.println();
 
-        //////////////////
-        /// IMAGE VIEW ///
-        //////////////////
-        VkImageViewCreateInfo imageViewCreateInfo = new VkImageViewCreateInfo();
-        imageViewCreateInfo.setImage(image);
-        imageViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
-        imageViewCreateInfo.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
-        imageViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        imageViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
-        imageViewCreateInfo.getSubresourceRange().setLevelCount(1);
-        imageViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
-        imageViewCreateInfo.getSubresourceRange().setLayerCount(1);
+        //////////////////////////////
+        /// FRAMEBUFFER IMAGE VIEW ///
+        //////////////////////////////
+        VkImageView.Array framebufferImageViews = new VkImageView.Array(2);
+        VkImageView colorImageView = framebufferImageViews.get(0);
+        VkImageView depthImageView = framebufferImageViews.get(1);
 
-        VkImageView imageView = new VkImageView();
-        vk.vkCreateImageViewP(device, imageViewCreateInfo, null, imageView);
-        System.out.println("Image view created successfully!");
+        VkImageViewCreateInfo colorImageViewCreateInfo = new VkImageViewCreateInfo();
+        colorImageViewCreateInfo.setImage(colorImage);
+        colorImageViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
+        colorImageViewCreateInfo.setFormat(framebufferColorImageFormat);
+        colorImageViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        colorImageViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
+        colorImageViewCreateInfo.getSubresourceRange().setLevelCount(1);
+        colorImageViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
+        colorImageViewCreateInfo.getSubresourceRange().setLayerCount(1);
+
+        vk.vkCreateImageViewP(device, colorImageViewCreateInfo, null, colorImageView);
+
+        VkImageViewCreateInfo depthImageViewCreateInfo = new VkImageViewCreateInfo();
+        depthImageViewCreateInfo.setImage(depthImage);
+        depthImageViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
+        depthImageViewCreateInfo.setFormat(framebufferDepthImageFormat);
+        depthImageViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+        depthImageViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
+        depthImageViewCreateInfo.getSubresourceRange().setLevelCount(1);
+        depthImageViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
+        depthImageViewCreateInfo.getSubresourceRange().setLayerCount(1);
+
+        vk.vkCreateImageViewP(device, depthImageViewCreateInfo, null, depthImageView);
+
+        System.out.println("Framebuffer image views created successfully! (" + colorImageView + ") (" + depthImageView + ")");
         System.out.println();
 
         ////////////////////
@@ -226,18 +274,19 @@ public class Test {
 
         VkCommandPool commandPool = new VkCommandPool();
         vk.vkCreateCommandPoolP(device, commandPoolCreateInfo, null, commandPool);
-        System.out.println("Command pool created successfully!");
+        System.out.println("Command pool created successfully! (" + commandPool + ")");
         System.out.println();
 
         ///////////////
         /// TEXTURE ///
         ///////////////
+        int textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
         BufferedImage textureBufferedImage = Utilities.loadImage(Test.class, "images/spyro.png");
         int textureDataSize = textureBufferedImage.getWidth() * textureBufferedImage.getHeight() * 4;
 
         VkImageCreateInfo textureCreateInfo = new VkImageCreateInfo();
         textureCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
-        textureCreateInfo.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
+        textureCreateInfo.setFormat(textureFormat);
         textureCreateInfo.setExtent(new VkExtent3D(textureBufferedImage.getWidth(), textureBufferedImage.getHeight(), 1));
         textureCreateInfo.setArrayLayers(1);
         textureCreateInfo.setMipLevels(1);
@@ -249,7 +298,7 @@ public class Test {
 
         VkImage texture = new VkImage();
         vk.vkCreateImageP(device, textureCreateInfo, null, texture);
-        System.out.println("Texture created successfully!");
+        System.out.println("Texture created successfully! (" + texture + ")");
         System.out.println();
 
         VkMemoryRequirements textureMemoryRequirements = new VkMemoryRequirements();
@@ -260,7 +309,7 @@ public class Test {
         textureMemoryAllocateInfo.setAllocationSize(textureMemoryRequirements.getSize());
         VkDeviceMemory textureMemory = new VkDeviceMemory();
         vk.vkAllocateMemoryP(device, textureMemoryAllocateInfo, null, textureMemory);
-        System.out.println("Texture memory allocated successfully!");
+        System.out.println("Texture memory allocated successfully! (" + textureMemory + ")");
         System.out.println();
 
         vk.vkBindImageMemoryP(device, texture, textureMemory, 0);
@@ -270,7 +319,7 @@ public class Test {
         VkImageViewCreateInfo textureViewCreateInfo = new VkImageViewCreateInfo();
         textureViewCreateInfo.setImage(texture);
         textureViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
-        textureViewCreateInfo.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
+        textureViewCreateInfo.setFormat(textureFormat);
         textureViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
         textureViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
         textureViewCreateInfo.getSubresourceRange().setLevelCount(1);
@@ -279,7 +328,7 @@ public class Test {
 
         VkImageView textureView = new VkImageView();
         vk.vkCreateImageViewP(device, textureViewCreateInfo, null, textureView);
-        System.out.println("Texture view created successfully!");
+        System.out.println("Texture view created successfully! (" + textureView + ")");
         System.out.println();
 
         /////////////////////////////
@@ -292,7 +341,7 @@ public class Test {
 
         VkCommandBuffer textureCommandBuffer = new VkCommandBuffer();
         vk.vkAllocateCommandBuffersP(device, textureCommandBufferAllocateInfo, textureCommandBuffer);
-        System.out.println("Texture command buffer allocated successfully!");
+        System.out.println("Texture command buffer allocated successfully! (" + textureCommandBuffer + ")");
         System.out.println();
 
         VkCommandBufferBeginInfo textureCommandBufferBeginInfo = new VkCommandBufferBeginInfo();
@@ -368,20 +417,30 @@ public class Test {
 
         VkSampler sampler = new VkSampler();
         vk.vkCreateSamplerP(device, samplerCreateInfo, null, sampler);
-        System.out.println("Sampler created successfully!");
+        System.out.println("Sampler created successfully! (" + sampler + ")");
         System.out.println();
 
         ////////////////////
         /// VERTEX INPUT ///
         ////////////////////
+        int vertexCount = 6;
+
         VkFloat.Array positionArray = new VkFloat.Array(
-                0.0f, -0.5f, 0.0f,
-                0.5f, 0.5f, 0.0f,
-                -0.5f, 0.5f, 0.0f
+                0.0f, -0.5f, 0.5f,
+                0.5f, 0.5f, 0.5f,
+                -0.5f, 0.5f, 0.5f,
+
+                0.0f, 0.5f, 0.4f,
+                -0.5f, -0.5f, 0.4f,
+                0.5f, -0.5f, 0.4f
         );
         long positionArraySize = positionArray.count() * VkFloat.sizeof();
 
         VkFloat.Array uvArray = new VkFloat.Array(
+                0.5f, 0.0f,
+                1.0f, 1.0f,
+                0.0f, 1.0f,
+
                 0.5f, 0.0f,
                 1.0f, 1.0f,
                 0.0f, 1.0f
@@ -389,6 +448,10 @@ public class Test {
         long uvArraySize = uvArray.count() * VkFloat.sizeof();
 
         VkFloat.Array colorArray = new VkFloat.Array(
+                1.0f, 0.0f, 0.0f, 1.0f,
+                0.0f, 1.0f, 0.0f, 1.0f,
+                0.0f, 0.0f, 1.0f, 1.0f,
+
                 1.0f, 0.0f, 0.0f, 1.0f,
                 0.0f, 1.0f, 0.0f, 1.0f,
                 0.0f, 0.0f, 1.0f, 1.0f
@@ -701,8 +764,8 @@ public class Test {
         inputAssemblyStateCreateInfo.setTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         inputAssemblyStateCreateInfo.setPrimitiveRestartEnable(VK_FALSE);
 
-        VkViewport viewport = new VkViewport(0.0f, 0.0f, IMAGE_WIDTH, IMAGE_HEIGHT, 0.0f, 1.0f);
-        VkRect2D scissor = new VkRect2D(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+        VkViewport viewport = new VkViewport(0.0f, 0.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 0.0f, 1.0f);
+        VkRect2D scissor = new VkRect2D(0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
         VkPipelineViewportStateCreateInfo viewportStateCreateInfo = new VkPipelineViewportStateCreateInfo();
         viewportStateCreateInfo.setViewportCount(1);
@@ -724,7 +787,11 @@ public class Test {
         multisampleStateCreateInfo.setRasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
         multisampleStateCreateInfo.setMinSampleShading(1.0f);
 
-        VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = null;
+        VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = new VkPipelineDepthStencilStateCreateInfo();
+        pipelineDepthStencilStateCreateInfo.setDepthTestEnable(VK_TRUE);
+        pipelineDepthStencilStateCreateInfo.setDepthWriteEnable(VK_TRUE);
+        pipelineDepthStencilStateCreateInfo.setDepthCompareOp(VK_COMPARE_OP_LESS);
+        pipelineDepthStencilStateCreateInfo.setDepthBoundsTestEnable(VK_FALSE);
 
         VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = new VkPipelineColorBlendAttachmentState();
         pipelineColorBlendAttachmentState.setBlendEnable(VK_FALSE);
@@ -758,37 +825,57 @@ public class Test {
 
         VkPipelineLayout pipelineLayout = new VkPipelineLayout();
         vk.vkCreatePipelineLayoutP(device, pipelineLayoutCreateInfo, null, pipelineLayout);
-        System.out.println("Pipeline layout created successfully!");
+        System.out.println("Pipeline layout created successfully! (" + pipelineLayout + ")");
         System.out.println();
 
-        VkAttachmentDescription attachmentDescription = new VkAttachmentDescription();
-        attachmentDescription.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
-        attachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
-        attachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-        attachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_STORE);
-        attachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-        attachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-        attachmentDescription.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-        attachmentDescription.setFinalLayout(VK_IMAGE_LAYOUT_GENERAL);
+        ////////////////////////////////////
+        /// PIPELINE - COLOR ATTACHMENTS ///
+        ////////////////////////////////////
+        VkAttachmentDescription.Array attachmentDescriptions = new VkAttachmentDescription.Array(2);
+        VkAttachmentDescription colorAttachmentDescription = attachmentDescriptions.get(0);
+        VkAttachmentDescription depthAttachmentDescription = attachmentDescriptions.get(1);
 
-        VkAttachmentReference attachmentReference = new VkAttachmentReference();
-        attachmentReference.setAttachment(0);
-        attachmentReference.setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        colorAttachmentDescription.setFormat(framebufferColorImageFormat);
+        colorAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
+        colorAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+        colorAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_STORE);
+        colorAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+        colorAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+        colorAttachmentDescription.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+        colorAttachmentDescription.setFinalLayout(VK_IMAGE_LAYOUT_GENERAL);
+
+        depthAttachmentDescription.setFormat(framebufferDepthImageFormat);
+        depthAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
+        depthAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+        depthAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+        depthAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+        depthAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+        depthAttachmentDescription.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+        depthAttachmentDescription.setFinalLayout(VK_IMAGE_LAYOUT_GENERAL);
+
+        VkAttachmentReference colorAttachmentReference = new VkAttachmentReference();
+        colorAttachmentReference.setAttachment(0);
+        colorAttachmentReference.setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        VkAttachmentReference depthAttachmentReference = new VkAttachmentReference();
+        depthAttachmentReference.setAttachment(1);
+        depthAttachmentReference.setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
         VkSubpassDescription subpassDescription = new VkSubpassDescription();
         subpassDescription.setPipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
         subpassDescription.setColorAttachmentCount(1);
-        subpassDescription.setPColorAttachments(attachmentReference);
+        subpassDescription.setPColorAttachments(colorAttachmentReference);
+        subpassDescription.setPDepthStencilAttachment(depthAttachmentReference);
 
         VkRenderPassCreateInfo renderPassCreateInfo = new VkRenderPassCreateInfo();
-        renderPassCreateInfo.setAttachmentCount(1);
-        renderPassCreateInfo.setPAttachments(attachmentDescription);
+        renderPassCreateInfo.setAttachmentCount(attachmentDescriptions.count());
+        renderPassCreateInfo.setPAttachments(attachmentDescriptions);
         renderPassCreateInfo.setSubpassCount(1);
         renderPassCreateInfo.setPSubpasses(subpassDescription);
 
         VkRenderPass renderPass = new VkRenderPass();
         vk.vkCreateRenderPassP(device, renderPassCreateInfo, null, renderPass);
-        System.out.println("Render pass created successfully!");
+        System.out.println("Render pass created successfully! (" + renderPass + ")");
         System.out.println();
 
         VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = new VkGraphicsPipelineCreateInfo();
@@ -800,6 +887,7 @@ public class Test {
         graphicsPipelineCreateInfo.setPRasterizationState(rasterizationStateCreateInfo);
         graphicsPipelineCreateInfo.setPMultisampleState(multisampleStateCreateInfo);
         graphicsPipelineCreateInfo.setPColorBlendState(colorBlendStateCreateInfo);
+        graphicsPipelineCreateInfo.setPDepthStencilState(pipelineDepthStencilStateCreateInfo);
         graphicsPipelineCreateInfo.setLayout(pipelineLayout);
         graphicsPipelineCreateInfo.setRenderPass(renderPass);
         graphicsPipelineCreateInfo.setSubpass(0);
@@ -814,15 +902,15 @@ public class Test {
         ///////////////////
         VkFramebufferCreateInfo framebufferCreateInfo = new VkFramebufferCreateInfo();
         framebufferCreateInfo.setRenderPass(renderPass);
-        framebufferCreateInfo.setAttachmentCount(1);
-        framebufferCreateInfo.setPAttachments(imageView);
-        framebufferCreateInfo.setWidth(IMAGE_WIDTH);
-        framebufferCreateInfo.setHeight(IMAGE_HEIGHT);
+        framebufferCreateInfo.setAttachmentCount(framebufferImageViews.count());
+        framebufferCreateInfo.setPAttachments(framebufferImageViews);
+        framebufferCreateInfo.setWidth(FRAMEBUFFER_WIDTH);
+        framebufferCreateInfo.setHeight(FRAMEBUFFER_HEIGHT);
         framebufferCreateInfo.setLayers(1);
 
         VkFramebuffer framebuffer = new VkFramebuffer();
         vk.vkCreateFramebufferP(device, framebufferCreateInfo, null, framebuffer);
-        System.out.println("Framebuffer created successfully!");
+        System.out.println("Framebuffer created successfully! (" + framebuffer + ")");
         System.out.println();
 
         //////////////////////
@@ -835,7 +923,7 @@ public class Test {
 
         VkCommandBuffer commandBuffer = new VkCommandBuffer();
         vk.vkAllocateCommandBuffersP(device, commandBufferAllocateInfo, commandBuffer);
-        System.out.println("Command buffer allocated successfully!");
+        System.out.println("Command buffer allocated successfully! (" + commandBuffer + ")");
         System.out.println();
 
         VkCommandBufferBeginInfo commandBufferBeginInfo = new VkCommandBufferBeginInfo();
@@ -845,18 +933,22 @@ public class Test {
         System.out.println("Command buffer begin!");
         System.out.println();
         {
+            VkClearValue.Array clearValues = new VkClearValue.Array(2);
+            clearValues.get(0).set(0.0f, 0.0f, 0.0f, 1.0f);
+            clearValues.get(1).set(1.0f, 0);
+
             VkRenderPassBeginInfo renderPassBeginInfo = new VkRenderPassBeginInfo();
             renderPassBeginInfo.setRenderPass(renderPass);
             renderPassBeginInfo.setFramebuffer(framebuffer);
-            renderPassBeginInfo.getRenderArea().getExtent().setWidth(IMAGE_WIDTH);
-            renderPassBeginInfo.getRenderArea().getExtent().setHeight(IMAGE_HEIGHT);
-            renderPassBeginInfo.setClearValueCount(1);
-            renderPassBeginInfo.setPClearValues(new VkClearValue(0.0f, 0.0f, 0.0f, 1.0f));
+            renderPassBeginInfo.getRenderArea().getExtent().setWidth(FRAMEBUFFER_WIDTH);
+            renderPassBeginInfo.getRenderArea().getExtent().setHeight(FRAMEBUFFER_HEIGHT);
+            renderPassBeginInfo.setClearValueCount(clearValues.count());
+            renderPassBeginInfo.setPClearValues(clearValues);
             vk.vkCmdBeginRenderPass(commandBuffer, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vk.vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
             vk.vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers.count(), vertexBuffers, new VkDeviceSize.Array(3));
             vk.vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, descriptorSet, 0, null);
-            vk.vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+            vk.vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
             vk.vkCmdEndRenderPass(commandBuffer);
         }
         vk.vkEndCommandBufferP(commandBuffer);
@@ -878,13 +970,13 @@ public class Test {
         /// READING IMAGE DATA ///
         //////////////////////////
         int bpp = 4;
-        int size = IMAGE_WIDTH * IMAGE_HEIGHT * bpp;
+        int size = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * bpp;
         VkPointer gpuDataLocation = new VkPointer();
-        vk.vkMapMemoryP(device, imageMemory, 0, size, 0, gpuDataLocation);
+        vk.vkMapMemoryP(device, colorImageMemory, 0, size, 0, gpuDataLocation);
         VkUInt8.Array gpuResultData = new VkUInt8.Array(gpuDataLocation, size);
-        BufferedImage resultBufferedImage = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
+        BufferedImage resultBufferedImage = new BufferedImage(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
         Utilities.dataToBufferedImage(gpuResultData, resultBufferedImage);
-        vk.vkUnmapMemory(device, imageMemory);
+        vk.vkUnmapMemory(device, colorImageMemory);
 
         ////////////////////////
         /// DISPLAYING IMAGE ///
@@ -917,9 +1009,12 @@ public class Test {
         vk.vkFreeMemory(device, textureMemory, null);
         vk.vkDestroyImage(device, texture, null);
         vk.vkDestroyCommandPool(device, commandPool, null);
-        vk.vkDestroyImageView(device, imageView, null);
-        vk.vkFreeMemory(device, imageMemory, null);
-        vk.vkDestroyImage(device, image, null);
+        vk.vkDestroyImageView(device, depthImageView, null);
+        vk.vkDestroyImageView(device, colorImageView, null);
+        vk.vkFreeMemory(device, depthImageMemory, null);
+        vk.vkFreeMemory(device, colorImageMemory, null);
+        vk.vkDestroyImage(device, depthImage, null);
+        vk.vkDestroyImage(device, colorImage, null);
         vk.vkDestroyDevice(device, null);
         vk.vkDestroyDebugReportCallbackEXT(instance, debugReport, null);
         vk.vkDestroyInstance(instance, null);
