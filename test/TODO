@@ -1,1 +1,9 @@
-reprogramm all matrices !!!
+find memory type index automatically
+    image
+    buffer
+
+objects
+    vertex array
+    framebuffer
+
+mgvulkan - add constructors for handle arrays accepting objects!

@@ -4,6 +4,8 @@ import cz.mg.vulkan.*;
 import static cz.mg.vulkan.Vk.*;
 import cz.mg.vulkan.utilities.math.Matrix4f;
 import cz.mg.vulkan.utilities.math.MatrixGenerator;
+import test.objects.*;
+
 import java.awt.image.BufferedImage;
 
 
@@ -165,106 +167,8 @@ public class Test {
         //////////////////////////
         /// FRAMEBUFFER IMAGES ///
         //////////////////////////
-        int framebufferColorImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        int framebufferDepthImageFormat = VK_FORMAT_D32_SFLOAT;
-
-        VkImageCreateInfo colorImageCreateInfo = new VkImageCreateInfo();
-        colorImageCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
-        colorImageCreateInfo.setFormat(framebufferColorImageFormat);
-        colorImageCreateInfo.setExtent(new VkExtent3D(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 1));
-        colorImageCreateInfo.setArrayLayers(1);
-        colorImageCreateInfo.setMipLevels(1);
-        colorImageCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
-        colorImageCreateInfo.setTiling(VK_IMAGE_TILING_LINEAR);
-        colorImageCreateInfo.setUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-        colorImageCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        colorImageCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-
-        VkImageCreateInfo depthImageCreateInfo = new VkImageCreateInfo();
-        depthImageCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
-        depthImageCreateInfo.setFormat(framebufferDepthImageFormat);
-        depthImageCreateInfo.setExtent(new VkExtent3D(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 1));
-        depthImageCreateInfo.setArrayLayers(1);
-        depthImageCreateInfo.setMipLevels(1);
-        depthImageCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
-        depthImageCreateInfo.setTiling(VK_IMAGE_TILING_OPTIMAL);
-        depthImageCreateInfo.setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-        depthImageCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        depthImageCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-
-        VkImage colorImage = new VkImage();
-        vk.vkCreateImageP(device, colorImageCreateInfo, null, colorImage);
-
-        VkImage depthImage = new VkImage();
-        vk.vkCreateImageP(device, depthImageCreateInfo, null, depthImage);
-
-        System.out.println("Framebuffer images created successfully! (" + colorImage + ") (" + depthImage + ")");
-        System.out.println();
-
-        ///////////////////////////////////////
-        /// FRAMEBUFFER IMAGE DEVICE MEMORY ///
-        ///////////////////////////////////////
-        VkMemoryRequirements colorImageMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetImageMemoryRequirements(device, colorImage, colorImageMemoryRequirements);
-
-        VkMemoryAllocateInfo colorImageMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        colorImageMemoryAllocateInfo.setMemoryTypeIndex(0);
-        colorImageMemoryAllocateInfo.setAllocationSize(colorImageMemoryRequirements.getSize());
-
-        VkDeviceMemory colorImageMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, colorImageMemoryAllocateInfo, null, colorImageMemory);
-
-        VkMemoryRequirements depthImageMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetImageMemoryRequirements(device, depthImage, depthImageMemoryRequirements);
-
-        VkMemoryAllocateInfo depthImageMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        depthImageMemoryAllocateInfo.setMemoryTypeIndex(0);
-        depthImageMemoryAllocateInfo.setAllocationSize(depthImageMemoryRequirements.getSize());
-
-        VkDeviceMemory depthImageMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, depthImageMemoryAllocateInfo, null, depthImageMemory);
-
-        System.out.println("Framebuffer image memory allocated successfully! (" + colorImageMemory + ") (" + depthImageMemory + ")");
-        System.out.println();
-
-        vk.vkBindImageMemoryP(device, colorImage, colorImageMemory, 0);
-        vk.vkBindImageMemoryP(device, depthImage, depthImageMemory, 0);
-        System.out.println("Framebuffer image memory bind successfully!");
-        System.out.println();
-
-        //////////////////////////////
-        /// FRAMEBUFFER IMAGE VIEW ///
-        //////////////////////////////
-        VkImageView.Array framebufferImageViews = new VkImageView.Array(2);
-        VkImageView colorImageView = framebufferImageViews.get(0);
-        VkImageView depthImageView = framebufferImageViews.get(1);
-
-        VkImageViewCreateInfo colorImageViewCreateInfo = new VkImageViewCreateInfo();
-        colorImageViewCreateInfo.setImage(colorImage);
-        colorImageViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
-        colorImageViewCreateInfo.setFormat(framebufferColorImageFormat);
-        colorImageViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        colorImageViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
-        colorImageViewCreateInfo.getSubresourceRange().setLevelCount(1);
-        colorImageViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
-        colorImageViewCreateInfo.getSubresourceRange().setLayerCount(1);
-
-        vk.vkCreateImageViewP(device, colorImageViewCreateInfo, null, colorImageView);
-
-        VkImageViewCreateInfo depthImageViewCreateInfo = new VkImageViewCreateInfo();
-        depthImageViewCreateInfo.setImage(depthImage);
-        depthImageViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
-        depthImageViewCreateInfo.setFormat(framebufferDepthImageFormat);
-        depthImageViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-        depthImageViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
-        depthImageViewCreateInfo.getSubresourceRange().setLevelCount(1);
-        depthImageViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
-        depthImageViewCreateInfo.getSubresourceRange().setLayerCount(1);
-
-        vk.vkCreateImageViewP(device, depthImageViewCreateInfo, null, depthImageView);
-
-        System.out.println("Framebuffer image views created successfully! (" + colorImageView + ") (" + depthImageView + ")");
-        System.out.println();
+        ColorAttachmentImage colorAttachment = new ColorAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+        DepthAttachmentImage depthAttachment = new DepthAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
 
         ////////////////////
         /// COMMAND POOL ///
@@ -280,121 +184,35 @@ public class Test {
         ///////////////
         /// TEXTURE ///
         ///////////////
-        int textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        BufferedImage textureBufferedImage = Utilities.loadImage(Test.class, "images/spyro.png");
-        int textureDataSize = textureBufferedImage.getWidth() * textureBufferedImage.getHeight() * 4;
+        BufferedImage[] textureMipmapBufferedImages = Utilities.generateMipmapImages(Utilities.loadImage(Test.class, "images/spyro.png"));
 
-        VkImageCreateInfo textureCreateInfo = new VkImageCreateInfo();
-        textureCreateInfo.setImageType(VK_IMAGE_TYPE_2D);
-        textureCreateInfo.setFormat(textureFormat);
-        textureCreateInfo.setExtent(new VkExtent3D(textureBufferedImage.getWidth(), textureBufferedImage.getHeight(), 1));
-        textureCreateInfo.setArrayLayers(1);
-        textureCreateInfo.setMipLevels(1);
-        textureCreateInfo.setSamples(VK_SAMPLE_COUNT_1_BIT);
-        textureCreateInfo.setTiling(VK_IMAGE_TILING_LINEAR);
-        textureCreateInfo.setUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-        textureCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        textureCreateInfo.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-
-        VkImage texture = new VkImage();
-        vk.vkCreateImageP(device, textureCreateInfo, null, texture);
-        System.out.println("Texture created successfully! (" + texture + ")");
-        System.out.println();
-
-        VkMemoryRequirements textureMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetImageMemoryRequirements(device, texture, textureMemoryRequirements);
-
-        VkMemoryAllocateInfo textureMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        textureMemoryAllocateInfo.setMemoryTypeIndex(0);
-        textureMemoryAllocateInfo.setAllocationSize(textureMemoryRequirements.getSize());
-        VkDeviceMemory textureMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, textureMemoryAllocateInfo, null, textureMemory);
-        System.out.println("Texture memory allocated successfully! (" + textureMemory + ")");
-        System.out.println();
-
-        vk.vkBindImageMemoryP(device, texture, textureMemory, 0);
-        System.out.println("Texture memory bind successfully!");
-        System.out.println();
-
-        VkImageViewCreateInfo textureViewCreateInfo = new VkImageViewCreateInfo();
-        textureViewCreateInfo.setImage(texture);
-        textureViewCreateInfo.setViewType(VK_IMAGE_VIEW_TYPE_2D);
-        textureViewCreateInfo.setFormat(textureFormat);
-        textureViewCreateInfo.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        textureViewCreateInfo.getSubresourceRange().setBaseMipLevel(0);
-        textureViewCreateInfo.getSubresourceRange().setLevelCount(1);
-        textureViewCreateInfo.getSubresourceRange().setBaseArrayLayer(0);
-        textureViewCreateInfo.getSubresourceRange().setLayerCount(1);
-
-        VkImageView textureView = new VkImageView();
-        vk.vkCreateImageViewP(device, textureViewCreateInfo, null, textureView);
-        System.out.println("Texture view created successfully! (" + textureView + ")");
-        System.out.println();
+        TextureImage texture = new TextureImage(
+                vk, device,
+                textureMipmapBufferedImages[0].getWidth(),
+                textureMipmapBufferedImages[0].getHeight(),
+                textureMipmapBufferedImages.length
+        );
 
         /////////////////////////////
         /// TEXTURE DATA TRANSFER ///
         /////////////////////////////
-        VkCommandBufferAllocateInfo textureCommandBufferAllocateInfo = new VkCommandBufferAllocateInfo();
-        textureCommandBufferAllocateInfo.setCommandPool(commandPool);
-        textureCommandBufferAllocateInfo.setLevel(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        textureCommandBufferAllocateInfo.setCommandBufferCount(1);
+        texture.setLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool, queue);
 
-        VkCommandBuffer textureCommandBuffer = new VkCommandBuffer();
-        vk.vkAllocateCommandBuffersP(device, textureCommandBufferAllocateInfo, textureCommandBuffer);
-        System.out.println("Texture command buffer allocated successfully! (" + textureCommandBuffer + ")");
-        System.out.println();
+        for(int i = 0; i < textureMipmapBufferedImages.length; i++){
+            BufferedImage textureMipmapBufferedImage = textureMipmapBufferedImages[i];
+            int textureDataSize = textureMipmapBufferedImage.getWidth() * textureMipmapBufferedImage.getHeight() * 4;
 
-        VkCommandBufferBeginInfo textureCommandBufferBeginInfo = new VkCommandBufferBeginInfo();
-        textureCommandBufferBeginInfo.setFlags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+            try (StagingBuffer textureStagingBuffer = new StagingBuffer(vk, device, textureDataSize)) {
+                VkPointer gpuTextureDataLocation = textureStagingBuffer.mapMemory();
+                VkUInt8.Array gpuTextureData = new VkUInt8.Array(gpuTextureDataLocation, textureDataSize);
+                Utilities.bufferedImageToData(textureMipmapBufferedImage, gpuTextureData);
+                textureStagingBuffer.unmapMemory();
 
-        vk.vkBeginCommandBufferP(textureCommandBuffer, textureCommandBufferBeginInfo);
-        System.out.println("Texture command buffer begin!");
-        System.out.println();
-        {
-            VkImageMemoryBarrier textureBarrier = new VkImageMemoryBarrier();
-            textureBarrier.setOldLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            textureBarrier.setNewLayout(VK_IMAGE_LAYOUT_GENERAL);
-            textureBarrier.setSrcQueueFamilyIndex((int) VK_QUEUE_FAMILY_IGNORED);
-            textureBarrier.setDstQueueFamilyIndex((int) VK_QUEUE_FAMILY_IGNORED);
-            textureBarrier.setImage(texture);
-            textureBarrier.getSubresourceRange().setAspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            textureBarrier.getSubresourceRange().setBaseMipLevel(0);
-            textureBarrier.getSubresourceRange().setLevelCount(1);
-            textureBarrier.getSubresourceRange().setBaseArrayLayer(0);
-            textureBarrier.getSubresourceRange().setLayerCount(1);
-
-            vk.vkCmdPipelineBarrier(
-                    textureCommandBuffer,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    0,
-                    null,
-                    0,
-                    null,
-                    1,
-                    textureBarrier
-            );
+                texture.setData(textureStagingBuffer, i, commandPool, queue);
+            }
         }
-        vk.vkEndCommandBufferP(textureCommandBuffer);
-        System.out.println("Texture command buffer end!");
-        System.out.println();
 
-        VkSubmitInfo textureSubmitInfo = new VkSubmitInfo();
-        textureSubmitInfo.setCommandBufferCount(1);
-        textureSubmitInfo.setPCommandBuffers(textureCommandBuffer);
-        vk.vkQueueSubmitP(queue, 1, textureSubmitInfo, null);
-        vk.vkQueueWaitIdleP(queue);
-        System.out.println("Texture layout change was successfull!");
-        System.out.println();
-
-        VkPointer gpuTextureDataLocation = new VkPointer();
-        vk.vkMapMemoryP(device, textureMemory, 0, textureDataSize, 0, gpuTextureDataLocation);
-        VkUInt8.Array gpuTextureData = new VkUInt8.Array(gpuTextureDataLocation, textureDataSize);
-        Utilities.bufferedImageToData(textureBufferedImage, gpuTextureData);
-        vk.vkUnmapMemory(device, textureMemory);
-        System.out.println("Texture data transferred successfully!");
-        System.out.println();
+        texture.setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool, queue);
 
         ///////////////
         /// SAMPLER ///
@@ -413,7 +231,7 @@ public class Test {
         samplerCreateInfo.setMipmapMode(VK_SAMPLER_MIPMAP_MODE_LINEAR);
         samplerCreateInfo.setMipLodBias(0.0f);
         samplerCreateInfo.setMinLod(0.0f);
-        samplerCreateInfo.setMaxLod(0.0f);
+        samplerCreateInfo.setMaxLod(texture.getMipLevelCount());
 
         VkSampler sampler = new VkSampler();
         vk.vkCreateSamplerP(device, samplerCreateInfo, null, sampler);
@@ -423,7 +241,7 @@ public class Test {
         ////////////////////
         /// VERTEX INPUT ///
         ////////////////////
-        int vertexCount = 6;
+        int vertexCount = 12;
 
         VkFloat.Array positionArray = new VkFloat.Array(
                 0.0f, -0.5f, 0.5f,
@@ -432,9 +250,17 @@ public class Test {
 
                 0.0f, 0.5f, 0.4f,
                 -0.5f, -0.5f, 0.4f,
-                0.5f, -0.5f, 0.4f
+                0.5f, -0.5f, 0.4f,
+
+                -1.0f, -1.0f, 0.0f,
+                -0.9f, -0.9f, 0.0f,
+                -1.0f, -0.9f, 0.0f,
+
+                -1.0f, -1.0f, 0.0f,
+                -0.9f, -1.0f, 0.0f,
+                -0.9f, -0.9f, 0.0f
         );
-        long positionArraySize = positionArray.count() * VkFloat.sizeof();
+        int positionArraySize = (int) (positionArray.count() * VkFloat.sizeof());
 
         VkFloat.Array uvArray = new VkFloat.Array(
                 0.5f, 0.0f,
@@ -443,9 +269,17 @@ public class Test {
 
                 0.5f, 0.0f,
                 1.0f, 1.0f,
-                0.0f, 1.0f
+                0.0f, 1.0f,
+
+                0.0f, 0.0f,
+                1.0f, 1.0f,
+                0.0f, 1.0f,
+
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                1.0f, 1.0f
         );
-        long uvArraySize = uvArray.count() * VkFloat.sizeof();
+        int uvArraySize = (int) (uvArray.count() * VkFloat.sizeof());
 
         VkFloat.Array colorArray = new VkFloat.Array(
                 1.0f, 0.0f, 0.0f, 1.0f,
@@ -454,93 +288,48 @@ public class Test {
 
                 1.0f, 0.0f, 0.0f, 1.0f,
                 0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f
+                0.0f, 0.0f, 1.0f, 1.0f,
+
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f
         );
-        long colorArraySize = colorArray.count() * VkFloat.sizeof();
+        int colorArraySize = (int) (colorArray.count() * VkFloat.sizeof());
 
-        VkBuffer.Array vertexBuffers = new VkBuffer.Array(3);
-        VkBuffer positionBuffer = vertexBuffers.get(0);
-        VkBuffer uvBuffer = vertexBuffers.get(1);
-        VkBuffer colorBuffer = vertexBuffers.get(2);
+        VertexBuffer positionBuffer = new VertexBuffer(vk, device, positionArraySize);
+        VertexBuffer uvBuffer = new VertexBuffer(vk, device, uvArraySize);
+        VertexBuffer colorBuffer = new VertexBuffer(vk, device, colorArraySize);
 
-        VkBufferCreateInfo positionBufferCreateInfo = new VkBufferCreateInfo();
-        positionBufferCreateInfo.setSize(positionArraySize);
-        positionBufferCreateInfo.setUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        positionBufferCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        vk.vkCreateBufferP(device, positionBufferCreateInfo, null, positionBuffer);
+        try (StagingBuffer positionStagingBuffer = new StagingBuffer(vk, device, positionArraySize)) {
+            VkPointer positionLocation = positionStagingBuffer.mapMemory();
+            VkFloat.Array gpuPositionArray = new VkFloat.Array(positionLocation, positionArray.count());
+            for(int i = 0; i < positionArray.count(); i++) gpuPositionArray.get(i).setValue(positionArray.get(i).getValue());
+            positionStagingBuffer.unmapMemory();
 
-        VkBufferCreateInfo uvBufferCreateInfo = new VkBufferCreateInfo();
-        uvBufferCreateInfo.setSize(uvArraySize);
-        uvBufferCreateInfo.setUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        uvBufferCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        vk.vkCreateBufferP(device, uvBufferCreateInfo, null, uvBuffer);
+            positionBuffer.setData(positionStagingBuffer, commandPool, queue);
+        }
 
-        VkBufferCreateInfo colorBufferCreateInfo = new VkBufferCreateInfo();
-        colorBufferCreateInfo.setSize(colorArraySize);
-        colorBufferCreateInfo.setUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        colorBufferCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-        vk.vkCreateBufferP(device, colorBufferCreateInfo, null, colorBuffer);
+        try (StagingBuffer uvStagingBuffer = new StagingBuffer(vk, device, uvArraySize)) {
+            VkPointer uvLocation = uvStagingBuffer.mapMemory();
+            VkFloat.Array gpuUvArray = new VkFloat.Array(uvLocation, uvArray.count());
+            for(int i = 0; i < uvArray.count(); i++) gpuUvArray.get(i).setValue(uvArray.get(i).getValue());
+            uvStagingBuffer.unmapMemory();
 
-        System.out.println("Vertex buffers created successfully!");
-        System.out.println();
+            uvBuffer.setData(uvStagingBuffer, commandPool, queue);
+        }
 
-        VkMemoryRequirements positionMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetBufferMemoryRequirements(device, positionBuffer, positionMemoryRequirements);
+        try (StagingBuffer colorStagingBuffer = new StagingBuffer(vk, device, colorArraySize)) {
+            VkPointer colorLocation = colorStagingBuffer.mapMemory();
+            VkFloat.Array gpuColorArray = new VkFloat.Array(colorLocation, colorArray.count());
+            for(int i = 0; i < colorArray.count(); i++) gpuColorArray.get(i).setValue(colorArray.get(i).getValue());
+            colorStagingBuffer.unmapMemory();
 
-        VkMemoryAllocateInfo positionBufferMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        positionBufferMemoryAllocateInfo.setAllocationSize(positionMemoryRequirements.getSize());
-        positionBufferMemoryAllocateInfo.setMemoryTypeIndex(1);
-        VkDeviceMemory positionBufferMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, positionBufferMemoryAllocateInfo, null, positionBufferMemory);
-
-        VkMemoryRequirements uvMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetBufferMemoryRequirements(device, uvBuffer, uvMemoryRequirements);
-
-        VkMemoryAllocateInfo uvBufferMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        uvBufferMemoryAllocateInfo.setAllocationSize(uvMemoryRequirements.getSize());
-        uvBufferMemoryAllocateInfo.setMemoryTypeIndex(1);
-        VkDeviceMemory uvBufferMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, uvBufferMemoryAllocateInfo, null, uvBufferMemory);
-
-        VkMemoryRequirements colorMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetBufferMemoryRequirements(device, colorBuffer, colorMemoryRequirements);
-
-        VkMemoryAllocateInfo colorBufferMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        colorBufferMemoryAllocateInfo.setAllocationSize(colorMemoryRequirements.getSize());
-        colorBufferMemoryAllocateInfo.setMemoryTypeIndex(1);
-        VkDeviceMemory colorBufferMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, colorBufferMemoryAllocateInfo, null, colorBufferMemory);
-
-        System.out.println("Vertex buffer memory allocated successfully!");
-        System.out.println();
-
-        vk.vkBindBufferMemoryP(device, positionBuffer, positionBufferMemory, 0);
-        vk.vkBindBufferMemoryP(device, uvBuffer, uvBufferMemory, 0);
-        vk.vkBindBufferMemoryP(device, colorBuffer, colorBufferMemory, 0);
-
-        System.out.println("Vertex buffer memory bind successfully!");
-        System.out.println();
-
-        VkPointer positionLocation = new VkPointer();
-        vk.vkMapMemoryP(device, positionBufferMemory, 0, positionArraySize, 0, positionLocation);
-        VkFloat.Array gpuPositionArray = new VkFloat.Array(positionLocation, positionArray.count());
-        for(int i = 0; i < positionArray.count(); i++) gpuPositionArray.get(i).setValue(positionArray.get(i).getValue());
-        vk.vkUnmapMemory(device, positionBufferMemory);
-
-        VkPointer uvLocation = new VkPointer();
-        vk.vkMapMemoryP(device, uvBufferMemory, 0, uvArraySize, 0, uvLocation);
-        VkFloat.Array gpuUvArray = new VkFloat.Array(uvLocation, uvArray.count());
-        for(int i = 0; i < uvArray.count(); i++) gpuUvArray.get(i).setValue(uvArray.get(i).getValue());
-        vk.vkUnmapMemory(device, uvBufferMemory);
-
-        VkPointer colorLocation = new VkPointer();
-        vk.vkMapMemoryP(device, colorBufferMemory, 0, colorArraySize, 0, colorLocation);
-        VkFloat.Array gpuColorArray = new VkFloat.Array(colorLocation, colorArray.count());
-        for(int i = 0; i < colorArray.count(); i++) gpuColorArray.get(i).setValue(colorArray.get(i).getValue());
-        vk.vkUnmapMemory(device, colorBufferMemory);
-
-        System.out.println("Vertex buffer data filled successfully!");
-        System.out.println();
+            colorBuffer.setData(colorStagingBuffer, commandPool, queue);
+        }
 
         ///////////////////////////////
         /// VERTEX INPUT - PIPELINE ///
@@ -708,7 +497,7 @@ public class Test {
 
         VkDescriptorImageInfo textureDescriptorInfo = new VkDescriptorImageInfo();
         textureDescriptorInfo.setImageLayout(VK_IMAGE_LAYOUT_GENERAL);
-        textureDescriptorInfo.setImageView(textureView);
+        textureDescriptorInfo.setImageView(texture.getView());
         textureDescriptorInfo.setSampler(sampler);
 
         textureDescriptorSetWrite.setDstSet(descriptorSet);
@@ -831,27 +620,30 @@ public class Test {
         ////////////////////////////////////
         /// PIPELINE - COLOR ATTACHMENTS ///
         ////////////////////////////////////
+        colorAttachment.setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, commandPool, queue);
+        depthAttachment.setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandPool, queue);
+
         VkAttachmentDescription.Array attachmentDescriptions = new VkAttachmentDescription.Array(2);
         VkAttachmentDescription colorAttachmentDescription = attachmentDescriptions.get(0);
         VkAttachmentDescription depthAttachmentDescription = attachmentDescriptions.get(1);
 
-        colorAttachmentDescription.setFormat(framebufferColorImageFormat);
+        colorAttachmentDescription.setFormat(colorAttachment.getFormat());
         colorAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
         colorAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
         colorAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_STORE);
         colorAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         colorAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-        colorAttachmentDescription.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-        colorAttachmentDescription.setFinalLayout(VK_IMAGE_LAYOUT_GENERAL);
+        colorAttachmentDescription.setInitialLayout(colorAttachment.getLayout());
+        colorAttachmentDescription.setFinalLayout(colorAttachment.getLayout());
 
-        depthAttachmentDescription.setFormat(framebufferDepthImageFormat);
+        depthAttachmentDescription.setFormat(depthAttachment.getFormat());
         depthAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
         depthAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
         depthAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
         depthAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         depthAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-        depthAttachmentDescription.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-        depthAttachmentDescription.setFinalLayout(VK_IMAGE_LAYOUT_GENERAL);
+        depthAttachmentDescription.setInitialLayout(depthAttachment.getLayout());
+        depthAttachmentDescription.setFinalLayout(depthAttachment.getLayout());
 
         VkAttachmentReference colorAttachmentReference = new VkAttachmentReference();
         colorAttachmentReference.setAttachment(0);
@@ -900,6 +692,10 @@ public class Test {
         ///////////////////
         /// FRAMEBUFFER ///
         ///////////////////
+        VkImageView.Array framebufferImageViews = new VkImageView.Array(2);
+        framebufferImageViews.get(0).setValue(colorAttachment.getView().getValue());
+        framebufferImageViews.get(1).setValue(depthAttachment.getView().getValue());
+
         VkFramebufferCreateInfo framebufferCreateInfo = new VkFramebufferCreateInfo();
         framebufferCreateInfo.setRenderPass(renderPass);
         framebufferCreateInfo.setAttachmentCount(framebufferImageViews.count());
@@ -913,70 +709,54 @@ public class Test {
         System.out.println("Framebuffer created successfully! (" + framebuffer + ")");
         System.out.println();
 
-        //////////////////////
-        /// COMMAND BUFFER ///
-        //////////////////////
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo = new VkCommandBufferAllocateInfo();
-        commandBufferAllocateInfo.setCommandPool(commandPool);
-        commandBufferAllocateInfo.setLevel(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        commandBufferAllocateInfo.setCommandBufferCount(1);
+        /////////////////
+        /// RENDERING ///
+        /////////////////
+        PrimaryCommandBuffer commandBuffer = new PrimaryCommandBuffer(vk, device, commandPool);
+        VkCommandBuffer cmd = commandBuffer.getCommandBuffer();
+        commandBuffer.begin();
 
-        VkCommandBuffer commandBuffer = new VkCommandBuffer();
-        vk.vkAllocateCommandBuffersP(device, commandBufferAllocateInfo, commandBuffer);
-        System.out.println("Command buffer allocated successfully! (" + commandBuffer + ")");
-        System.out.println();
+        VkClearValue.Array clearValues = new VkClearValue.Array(2);
+        clearValues.get(0).set(0.0f, 0.0f, 0.0f, 1.0f);
+        clearValues.get(1).set(1.0f, 0);
 
-        VkCommandBufferBeginInfo commandBufferBeginInfo = new VkCommandBufferBeginInfo();
-        commandBufferBeginInfo.setFlags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+        VkBuffer.Array vertexBuffers = new VkBuffer.Array(3);
+        vertexBuffers.get(0).setValue(positionBuffer.getBuffer().getValue());
+        vertexBuffers.get(1).setValue(uvBuffer.getBuffer().getValue());
+        vertexBuffers.get(2).setValue(colorBuffer.getBuffer().getValue());
 
-        vk.vkBeginCommandBufferP(commandBuffer, commandBufferBeginInfo);
-        System.out.println("Command buffer begin!");
-        System.out.println();
-        {
-            VkClearValue.Array clearValues = new VkClearValue.Array(2);
-            clearValues.get(0).set(0.0f, 0.0f, 0.0f, 1.0f);
-            clearValues.get(1).set(1.0f, 0);
+        VkRenderPassBeginInfo renderPassBeginInfo = new VkRenderPassBeginInfo();
+        renderPassBeginInfo.setRenderPass(renderPass);
+        renderPassBeginInfo.setFramebuffer(framebuffer);
+        renderPassBeginInfo.getRenderArea().getExtent().setWidth(FRAMEBUFFER_WIDTH);
+        renderPassBeginInfo.getRenderArea().getExtent().setHeight(FRAMEBUFFER_HEIGHT);
+        renderPassBeginInfo.setClearValueCount(clearValues.count());
+        renderPassBeginInfo.setPClearValues(clearValues);
+        vk.vkCmdBeginRenderPass(cmd, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vk.vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vk.vkCmdBindVertexBuffers(cmd, 0, vertexBuffers.count(), vertexBuffers, new VkDeviceSize.Array(3));
+        vk.vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, descriptorSet, 0, null);
+        vk.vkCmdDraw(cmd, vertexCount, 1, 0, 0);
+        vk.vkCmdEndRenderPass(cmd);
 
-            VkRenderPassBeginInfo renderPassBeginInfo = new VkRenderPassBeginInfo();
-            renderPassBeginInfo.setRenderPass(renderPass);
-            renderPassBeginInfo.setFramebuffer(framebuffer);
-            renderPassBeginInfo.getRenderArea().getExtent().setWidth(FRAMEBUFFER_WIDTH);
-            renderPassBeginInfo.getRenderArea().getExtent().setHeight(FRAMEBUFFER_HEIGHT);
-            renderPassBeginInfo.setClearValueCount(clearValues.count());
-            renderPassBeginInfo.setPClearValues(clearValues);
-            vk.vkCmdBeginRenderPass(commandBuffer, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vk.vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-            vk.vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers.count(), vertexBuffers, new VkDeviceSize.Array(3));
-            vk.vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, descriptorSet, 0, null);
-            vk.vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
-            vk.vkCmdEndRenderPass(commandBuffer);
-        }
-        vk.vkEndCommandBufferP(commandBuffer);
-        System.out.println("Command buffer end!");
-        System.out.println();
-
-        ////////////////////////
-        /// ACTUAL RENDERING ///
-        ////////////////////////
-        VkSubmitInfo submitInfo = new VkSubmitInfo();
-        submitInfo.setCommandBufferCount(1);
-        submitInfo.setPCommandBuffers(commandBuffer);
-        vk.vkQueueSubmitP(queue, 1, submitInfo, null);
-        vk.vkQueueWaitIdleP(queue);
-        System.out.println("Rendering was successfull!");
-        System.out.println();
+        commandBuffer.end();
+        commandBuffer.submit(queue);
 
         //////////////////////////
         /// READING IMAGE DATA ///
         //////////////////////////
-        int bpp = 4;
-        int size = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * bpp;
-        VkPointer gpuDataLocation = new VkPointer();
-        vk.vkMapMemoryP(device, colorImageMemory, 0, size, 0, gpuDataLocation);
-        VkUInt8.Array gpuResultData = new VkUInt8.Array(gpuDataLocation, size);
+        colorAttachment.setLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, commandPool, queue);
+
         BufferedImage resultBufferedImage = new BufferedImage(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
-        Utilities.dataToBufferedImage(gpuResultData, resultBufferedImage);
-        vk.vkUnmapMemory(device, colorImageMemory);
+        int colorAttachmentDataSize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4;
+        try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, device, colorAttachmentDataSize)) {
+            colorAttachment.getData(resultStagingBuffer, 0, commandPool, queue);
+
+            VkPointer gpuDataLocation = resultStagingBuffer.mapMemory();
+            VkUInt8.Array gpuResultData = new VkUInt8.Array(gpuDataLocation, colorAttachmentDataSize);
+            Utilities.dataToBufferedImage(gpuResultData, resultBufferedImage);
+            resultStagingBuffer.unmapMemory();
+        }
 
         ////////////////////////
         /// DISPLAYING IMAGE ///
@@ -988,6 +768,7 @@ public class Test {
         ///////////////
         vk.vkDeviceWaitIdleP(device);
 
+        commandBuffer.close();
         vk.vkDestroyFramebuffer(device, framebuffer, null);
         vk.vkDestroyPipeline(device, pipeline, null);
         vk.vkDestroyRenderPass(device, renderPass, null);
@@ -998,23 +779,14 @@ public class Test {
         vk.vkDestroyDescriptorSetLayout(device, descriptorSetLayout, null);
         vk.vkFreeMemory(device, matrixBufferMemory, null);
         vk.vkDestroyBuffer(device, matrixBuffer, null);
-        vk.vkFreeMemory(device, colorBufferMemory, null);
-        vk.vkFreeMemory(device, uvBufferMemory, null);
-        vk.vkFreeMemory(device, positionBufferMemory, null);
-        vk.vkDestroyBuffer(device, colorBuffer, null);
-        vk.vkDestroyBuffer(device, uvBuffer, null);
-        vk.vkDestroyBuffer(device, positionBuffer, null);
+        positionBuffer.close();
+        uvBuffer.close();
+        colorBuffer.close();
         vk.vkDestroySampler(device, sampler, null);
-        vk.vkDestroyImageView(device, textureView, null);
-        vk.vkFreeMemory(device, textureMemory, null);
-        vk.vkDestroyImage(device, texture, null);
+        texture.close();
         vk.vkDestroyCommandPool(device, commandPool, null);
-        vk.vkDestroyImageView(device, depthImageView, null);
-        vk.vkDestroyImageView(device, colorImageView, null);
-        vk.vkFreeMemory(device, depthImageMemory, null);
-        vk.vkFreeMemory(device, colorImageMemory, null);
-        vk.vkDestroyImage(device, depthImage, null);
-        vk.vkDestroyImage(device, colorImage, null);
+        depthAttachment.close();
+        colorAttachment.close();
         vk.vkDestroyDevice(device, null);
         vk.vkDestroyDebugReportCallbackEXT(instance, debugReport, null);
         vk.vkDestroyInstance(instance, null);
