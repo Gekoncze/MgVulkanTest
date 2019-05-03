@@ -11,6 +11,10 @@ public class ColorAttachmentImage extends Image {
     }
 
     public ColorAttachmentImage(Vk vk, VkDevice device, int width, int height, int format) {
-        super(vk, device, width, height, 1, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        this(vk, device, width, height, format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    }
+
+    public ColorAttachmentImage(Vk vk, VkDevice device, int width, int height, int format, int usage) {
+        super(vk, device, width, height, 1, format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | usage);
     }
 }

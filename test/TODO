@@ -5,5 +5,6 @@ find memory type index automatically
 objects
     vertex array
     framebuffer
+    shaders
 
-mgvulkan - add constructors for handle arrays accepting objects!
+move objects to mgvulkanutilities

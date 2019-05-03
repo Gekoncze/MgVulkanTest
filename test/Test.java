@@ -164,12 +164,6 @@ public class Test {
         VkQueue queue = new VkQueue();
         vk.vkGetDeviceQueue(device, 0, 0, queue);
 
-        //////////////////////////
-        /// FRAMEBUFFER IMAGES ///
-        //////////////////////////
-        ColorAttachmentImage colorAttachment = new ColorAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-        DepthAttachmentImage depthAttachment = new DepthAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-
         ////////////////////
         /// COMMAND POOL ///
         ////////////////////
@@ -617,6 +611,12 @@ public class Test {
         System.out.println("Pipeline layout created successfully! (" + pipelineLayout + ")");
         System.out.println();
 
+        //////////////////////////
+        /// FRAMEBUFFER IMAGES ///
+        //////////////////////////
+        ColorAttachmentImage colorAttachment = new ColorAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+        DepthAttachmentImage depthAttachment = new DepthAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+
         ////////////////////////////////////
         /// PIPELINE - COLOR ATTACHMENTS ///
         ////////////////////////////////////
@@ -692,9 +692,10 @@ public class Test {
         ///////////////////
         /// FRAMEBUFFER ///
         ///////////////////
-        VkImageView.Array framebufferImageViews = new VkImageView.Array(2);
-        framebufferImageViews.get(0).setValue(colorAttachment.getView().getValue());
-        framebufferImageViews.get(1).setValue(depthAttachment.getView().getValue());
+        VkImageView.Array framebufferImageViews = new VkImageView.Array(
+                colorAttachment.getView(),
+                depthAttachment.getView()
+        );
 
         VkFramebufferCreateInfo framebufferCreateInfo = new VkFramebufferCreateInfo();
         framebufferCreateInfo.setRenderPass(renderPass);
@@ -720,10 +721,11 @@ public class Test {
         clearValues.get(0).set(0.0f, 0.0f, 0.0f, 1.0f);
         clearValues.get(1).set(1.0f, 0);
 
-        VkBuffer.Array vertexBuffers = new VkBuffer.Array(3);
-        vertexBuffers.get(0).setValue(positionBuffer.getBuffer().getValue());
-        vertexBuffers.get(1).setValue(uvBuffer.getBuffer().getValue());
-        vertexBuffers.get(2).setValue(colorBuffer.getBuffer().getValue());
+        VkBuffer.Array vertexBuffers = new VkBuffer.Array(
+                positionBuffer.getBuffer(),
+                uvBuffer.getBuffer(),
+                colorBuffer.getBuffer()
+        );
 
         VkRenderPassBeginInfo renderPassBeginInfo = new VkRenderPassBeginInfo();
         renderPassBeginInfo.setRenderPass(renderPass);
