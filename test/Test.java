@@ -376,41 +376,18 @@ public class Test {
         //////////////
         MatrixGenerator generator = new MatrixGenerator(MatrixGenerator.Angle.DEGREES);
         Matrix4f matrix = generator.rotateZ(-90.0f);
-        long matrixSize = matrix.count()*VkFloat.sizeof();
+        int matrixSize = (int) (matrix.count()*VkFloat.sizeof());
 
-        VkBufferCreateInfo matrixBufferCreateInfo = new VkBufferCreateInfo();
-        matrixBufferCreateInfo.setUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-        matrixBufferCreateInfo.setSize(matrixSize);
-        matrixBufferCreateInfo.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        UniformBuffer matrixBuffer = new UniformBuffer(vk, device, matrixSize);
 
-        VkBuffer matrixBuffer = new VkBuffer();
-        vk.vkCreateBufferP(device, matrixBufferCreateInfo, null, matrixBuffer);
-        System.out.println("Uniform buffer created successfully!");
-        System.out.println();
+        try (StagingBuffer matrixStagingBuffer = new StagingBuffer(vk, device, matrixSize)) {
+            VkPointer uniformBufferMemoryLocation = matrixStagingBuffer.mapMemory();
+            VkFloat.Array gpuMatrix = new VkFloat.Array(uniformBufferMemoryLocation, matrix.count());
+            for(int i = 0; i < matrix.count(); i++) gpuMatrix.setValue(i, matrix.getValue(i));
+            matrixStagingBuffer.unmapMemory();
 
-        VkMemoryRequirements matrixMemoryRequirements = new VkMemoryRequirements();
-        vk.vkGetBufferMemoryRequirements(device, matrixBuffer, matrixMemoryRequirements);
-
-        VkMemoryAllocateInfo matrixMemoryAllocateInfo = new VkMemoryAllocateInfo();
-        matrixMemoryAllocateInfo.setMemoryTypeIndex(1);
-        matrixMemoryAllocateInfo.setAllocationSize(matrixMemoryRequirements.getSizeQ());
-
-        VkDeviceMemory matrixBufferMemory = new VkDeviceMemory();
-        vk.vkAllocateMemoryP(device, matrixMemoryAllocateInfo, null, matrixBufferMemory);
-        System.out.println("Uniform buffer memory allocated successfully!");
-        System.out.println();
-
-        VkPointer uniformBufferMemoryLocation = new VkPointer();
-        vk.vkMapMemoryP(device, matrixBufferMemory, 0, matrixSize, 0, uniformBufferMemoryLocation);
-        VkFloat.Array gpuMatrix = new VkFloat.Array(uniformBufferMemoryLocation, matrix.count());
-        for(int i = 0; i < matrix.count(); i++) gpuMatrix.setValue(i, matrix.getValue(i));
-        vk.vkUnmapMemory(device, matrixBufferMemory);
-        System.out.println("Uniform buffer filled successfully!");
-        System.out.println();
-
-        vk.vkBindBufferMemoryP(device, matrixBuffer, matrixBufferMemory, 0);
-        System.out.println("Uniform buffer memory bind successfully!");
-        System.out.println();
+            matrixBuffer.setData(matrixStagingBuffer, commandPool, queue);
+        }
 
         /////////////////////////////
         /// DESCRIPTOR SET LAYOUT ///
@@ -435,7 +412,7 @@ public class Test {
 
         VkDescriptorSetLayout descriptorSetLayout = new VkDescriptorSetLayout();
         vk.vkCreateDescriptorSetLayoutP(device, layoutCreateInfo, null, descriptorSetLayout);
-        System.out.println("Texture descriptor set layout created successfully!");
+        System.out.println("Descriptor set layout created successfully!");
         System.out.println();
 
         ///////////////////////////////
@@ -479,7 +456,7 @@ public class Test {
         VkWriteDescriptorSet textureDescriptorSetWrite = descriptorSetWrites.get(1);
 
         VkDescriptorBufferInfo matrixDescriptorInfo = new VkDescriptorBufferInfo();
-        matrixDescriptorInfo.setBuffer(matrixBuffer);
+        matrixDescriptorInfo.setBuffer(matrixBuffer.getBuffer());
         matrixDescriptorInfo.setRange(matrixSize);
 
         matrixDescriptorSetWrite.setDstSet(descriptorSet);
@@ -508,22 +485,10 @@ public class Test {
         ///////////////
         /// SHADERS ///
         ///////////////
-        byte[] vertexShaderCode = Utilities.loadBytes(Test.class, "shaders/testVert.spv");
-        byte[] fragmentShaderCode = Utilities.loadBytes(Test.class, "shaders/testFrag.spv");
-        VkUInt32.Array vertexShaderBuffer = Utilities.createBuffer(vertexShaderCode);
-        VkUInt32.Array fragmentShaderBuffer = Utilities.createBuffer(fragmentShaderCode);
-        VkShaderModuleCreateInfo vertexShaderCreateInfo = new VkShaderModuleCreateInfo();
-        vertexShaderCreateInfo.setCodeSize(vertexShaderCode.length);
-        vertexShaderCreateInfo.setPCode(vertexShaderBuffer);
-        VkShaderModule vertexShader = new VkShaderModule();
-        vk.vkCreateShaderModuleP(device, vertexShaderCreateInfo, null, vertexShader);
-        VkShaderModuleCreateInfo fragmentShaderCreateInfo = new VkShaderModuleCreateInfo();
-        fragmentShaderCreateInfo.setCodeSize(fragmentShaderCode.length);
-        fragmentShaderCreateInfo.setPCode(fragmentShaderBuffer);
-        VkShaderModule fragmentShader = new VkShaderModule();
-        vk.vkCreateShaderModuleP(device, fragmentShaderCreateInfo, null, fragmentShader);
-        System.out.println("Shader modules created successfully!");
-        System.out.println();
+        VkUInt32.Array vertexShaderCode = Utilities.createBuffer(Utilities.loadBytes(Test.class, "shaders/testVert.spv"));
+        VkUInt32.Array fragmentShaderCode = Utilities.createBuffer(Utilities.loadBytes(Test.class, "shaders/testFrag.spv"));
+        Shader vertexShader = new Shader(vk, device, vertexShaderCode);
+        Shader fragmentShader = new Shader(vk, device, fragmentShaderCode);
 
         //////////////////////////
         /// SHADERS - PIPELINE ///
@@ -532,12 +497,12 @@ public class Test {
 
         VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo = shaderStages.get(0);
         vertexShaderStageCreateInfo.setStage(VK_SHADER_STAGE_VERTEX_BIT);
-        vertexShaderStageCreateInfo.setModule(vertexShader);
+        vertexShaderStageCreateInfo.setModule(vertexShader.getShader());
         vertexShaderStageCreateInfo.setPName("main");
 
         VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = shaderStages.get(1);
         fragmentShaderStageCreateInfo.setStage(VK_SHADER_STAGE_FRAGMENT_BIT);
-        fragmentShaderStageCreateInfo.setModule(fragmentShader);
+        fragmentShaderStageCreateInfo.setModule(fragmentShader.getShader());
         fragmentShaderStageCreateInfo.setPName("main");
 
         ////////////////
@@ -611,39 +576,37 @@ public class Test {
         System.out.println("Pipeline layout created successfully! (" + pipelineLayout + ")");
         System.out.println();
 
-        //////////////////////////
-        /// FRAMEBUFFER IMAGES ///
-        //////////////////////////
-        ColorAttachmentImage colorAttachment = new ColorAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-        DepthAttachmentImage depthAttachment = new DepthAttachmentImage(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+        ///////////////////////////////
+        /// FRAMEBUFFER ATTACHMENTS ///
+        ///////////////////////////////
+        FramebufferAttachments framebufferAttachments = new FramebufferAttachments(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, true, true);
+        framebufferAttachments.getColorAttachment().setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, commandPool, queue);
+        framebufferAttachments.getDepthAttachment().setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandPool, queue);
 
         ////////////////////////////////////
         /// PIPELINE - COLOR ATTACHMENTS ///
         ////////////////////////////////////
-        colorAttachment.setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, commandPool, queue);
-        depthAttachment.setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandPool, queue);
-
         VkAttachmentDescription.Array attachmentDescriptions = new VkAttachmentDescription.Array(2);
         VkAttachmentDescription colorAttachmentDescription = attachmentDescriptions.get(0);
         VkAttachmentDescription depthAttachmentDescription = attachmentDescriptions.get(1);
 
-        colorAttachmentDescription.setFormat(colorAttachment.getFormat());
+        colorAttachmentDescription.setFormat(framebufferAttachments.getColorAttachment().getFormat());
         colorAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
         colorAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
         colorAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_STORE);
         colorAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         colorAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-        colorAttachmentDescription.setInitialLayout(colorAttachment.getLayout());
-        colorAttachmentDescription.setFinalLayout(colorAttachment.getLayout());
+        colorAttachmentDescription.setInitialLayout(framebufferAttachments.getColorAttachment().getLayout());
+        colorAttachmentDescription.setFinalLayout(framebufferAttachments.getColorAttachment().getLayout());
 
-        depthAttachmentDescription.setFormat(depthAttachment.getFormat());
+        depthAttachmentDescription.setFormat(framebufferAttachments.getDepthAttachment().getFormat());
         depthAttachmentDescription.setSamples(VK_SAMPLE_COUNT_1_BIT);
         depthAttachmentDescription.setLoadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
         depthAttachmentDescription.setStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
         depthAttachmentDescription.setStencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         depthAttachmentDescription.setStencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-        depthAttachmentDescription.setInitialLayout(depthAttachment.getLayout());
-        depthAttachmentDescription.setFinalLayout(depthAttachment.getLayout());
+        depthAttachmentDescription.setInitialLayout(framebufferAttachments.getDepthAttachment().getLayout());
+        depthAttachmentDescription.setFinalLayout(framebufferAttachments.getDepthAttachment().getLayout());
 
         VkAttachmentReference colorAttachmentReference = new VkAttachmentReference();
         colorAttachmentReference.setAttachment(0);
@@ -692,23 +655,7 @@ public class Test {
         ///////////////////
         /// FRAMEBUFFER ///
         ///////////////////
-        VkImageView.Array framebufferImageViews = new VkImageView.Array(
-                colorAttachment.getView(),
-                depthAttachment.getView()
-        );
-
-        VkFramebufferCreateInfo framebufferCreateInfo = new VkFramebufferCreateInfo();
-        framebufferCreateInfo.setRenderPass(renderPass);
-        framebufferCreateInfo.setAttachmentCount(framebufferImageViews.count());
-        framebufferCreateInfo.setPAttachments(framebufferImageViews);
-        framebufferCreateInfo.setWidth(FRAMEBUFFER_WIDTH);
-        framebufferCreateInfo.setHeight(FRAMEBUFFER_HEIGHT);
-        framebufferCreateInfo.setLayers(1);
-
-        VkFramebuffer framebuffer = new VkFramebuffer();
-        vk.vkCreateFramebufferP(device, framebufferCreateInfo, null, framebuffer);
-        System.out.println("Framebuffer created successfully! (" + framebuffer + ")");
-        System.out.println();
+        Framebuffer framebuffer = new Framebuffer(vk, device, framebufferAttachments, renderPass);
 
         /////////////////
         /// RENDERING ///
@@ -729,11 +676,12 @@ public class Test {
 
         VkRenderPassBeginInfo renderPassBeginInfo = new VkRenderPassBeginInfo();
         renderPassBeginInfo.setRenderPass(renderPass);
-        renderPassBeginInfo.setFramebuffer(framebuffer);
-        renderPassBeginInfo.getRenderArea().getExtent().setWidth(FRAMEBUFFER_WIDTH);
-        renderPassBeginInfo.getRenderArea().getExtent().setHeight(FRAMEBUFFER_HEIGHT);
+        renderPassBeginInfo.setFramebuffer(framebuffer.getFramebuffer());
+        renderPassBeginInfo.getRenderArea().getExtent().setWidth(framebuffer.getWidth());
+        renderPassBeginInfo.getRenderArea().getExtent().setHeight(framebuffer.getHeight());
         renderPassBeginInfo.setClearValueCount(clearValues.count());
         renderPassBeginInfo.setPClearValues(clearValues);
+
         vk.vkCmdBeginRenderPass(cmd, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vk.vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vk.vkCmdBindVertexBuffers(cmd, 0, vertexBuffers.count(), vertexBuffers, new VkDeviceSize.Array(3));
@@ -747,12 +695,12 @@ public class Test {
         //////////////////////////
         /// READING IMAGE DATA ///
         //////////////////////////
-        colorAttachment.setLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, commandPool, queue);
+        framebufferAttachments.getColorAttachment().setLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, commandPool, queue);
 
         BufferedImage resultBufferedImage = new BufferedImage(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
         int colorAttachmentDataSize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4;
         try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, device, colorAttachmentDataSize)) {
-            colorAttachment.getData(resultStagingBuffer, 0, commandPool, queue);
+            framebufferAttachments.getColorAttachment().getData(resultStagingBuffer, 0, commandPool, queue);
 
             VkPointer gpuDataLocation = resultStagingBuffer.mapMemory();
             VkUInt8.Array gpuResultData = new VkUInt8.Array(gpuDataLocation, colorAttachmentDataSize);
@@ -771,24 +719,22 @@ public class Test {
         vk.vkDeviceWaitIdleP(device);
 
         commandBuffer.close();
-        vk.vkDestroyFramebuffer(device, framebuffer, null);
+        framebuffer.close();
         vk.vkDestroyPipeline(device, pipeline, null);
         vk.vkDestroyRenderPass(device, renderPass, null);
         vk.vkDestroyPipelineLayout(device, pipelineLayout, null);
-        vk.vkDestroyShaderModule(device, fragmentShader, null);
-        vk.vkDestroyShaderModule(device, vertexShader, null);
+        fragmentShader.close();
+        vertexShader.close();
         vk.vkDestroyDescriptorPool(device, descriptorPool, null);
         vk.vkDestroyDescriptorSetLayout(device, descriptorSetLayout, null);
-        vk.vkFreeMemory(device, matrixBufferMemory, null);
-        vk.vkDestroyBuffer(device, matrixBuffer, null);
+        matrixBuffer.close();
         positionBuffer.close();
         uvBuffer.close();
         colorBuffer.close();
         vk.vkDestroySampler(device, sampler, null);
         texture.close();
         vk.vkDestroyCommandPool(device, commandPool, null);
-        depthAttachment.close();
-        colorAttachment.close();
+        framebufferAttachments.close();
         vk.vkDestroyDevice(device, null);
         vk.vkDestroyDebugReportCallbackEXT(instance, debugReport, null);
         vk.vkDestroyInstance(instance, null);

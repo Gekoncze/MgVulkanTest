@@ -3,8 +3,8 @@ find memory type index automatically
     buffer
 
 objects
-    vertex array
-    framebuffer
-    shaders
+    vertex array ???
+    pipeline
+    render pass
 
 move objects to mgvulkanutilities
