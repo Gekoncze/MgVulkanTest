@@ -123,27 +123,16 @@ public class Test {
             }
         }
         System.out.println();
-        VkPhysicalDevice selectedPhysicalDevice = physicalDevices.get(0);
 
-        //////////////////////
-        /// QUEUE FAMILIES ///
-        //////////////////////
-        vk.vkGetPhysicalDeviceQueueFamilyProperties(selectedPhysicalDevice, count, null);
-        VkQueueFamilyProperties.Array queueFamilyProperties = new VkQueueFamilyProperties.Array(count.getValue());
-        vk.vkGetPhysicalDeviceQueueFamilyProperties(selectedPhysicalDevice, count, queueFamilyProperties);
-
-        System.out.println("Found " + queueFamilyProperties.count() + " queue family properties");
-        for(VkQueueFamilyProperties properties : queueFamilyProperties){
-            System.out.println("    number of queues: " + properties.getQueueCount());
-            System.out.println("    flags: " + new VkQueueFlagBits(properties.getQueueFlags()));
-        }
-        System.out.println();
+        int selectedPhysicalDeviceIndex = 0;
+        VkPhysicalDevice physicalDevice = physicalDevices.get(selectedPhysicalDeviceIndex);
+        int selectedQueueFamilyIndex = PhysicalDevice.findQueueFamilyIndex(vk, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
 
         //////////////////////
         /// LOGICAL DEVICE ///
         //////////////////////
         VkDeviceQueueCreateInfo queueCreateInfo = new VkDeviceQueueCreateInfo();
-        queueCreateInfo.setQueueFamilyIndex(0);
+        queueCreateInfo.setQueueFamilyIndex(selectedQueueFamilyIndex);
         queueCreateInfo.setQueueCount(1);
         queueCreateInfo.setPQueuePriorities(new VkFloat.Array(1.0f));
 
@@ -153,7 +142,7 @@ public class Test {
         deviceCreateInfo.setPQueueCreateInfos(queueCreateInfo);
 
         VkDevice device = new VkDevice();
-        vk.vkCreateDeviceP(selectedPhysicalDevice, deviceCreateInfo, null, device);
+        vk.vkCreateDeviceP(physicalDevice, deviceCreateInfo, null, device);
         System.out.println("Logical device created successfully! (" + device + ")");
         System.out.println();
 
@@ -180,7 +169,7 @@ public class Test {
         BufferedImage[] textureMipmapBufferedImages = Utilities.generateMipmapImages(Utilities.loadImage(Test.class, "images/spyro.png"));
 
         TextureImage texture = new TextureImage(
-                vk, selectedPhysicalDevice, device,
+                vk, physicalDevice, device,
                 textureMipmapBufferedImages[0].getWidth(),
                 textureMipmapBufferedImages[0].getHeight(),
                 textureMipmapBufferedImages.length
@@ -195,7 +184,7 @@ public class Test {
             BufferedImage textureMipmapBufferedImage = textureMipmapBufferedImages[i];
             int textureDataSize = textureMipmapBufferedImage.getWidth() * textureMipmapBufferedImage.getHeight() * 4;
 
-            try (StagingBuffer textureStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, textureDataSize)) {
+            try (StagingBuffer textureStagingBuffer = new StagingBuffer(vk, physicalDevice, device, textureDataSize)) {
                 VkPointer gpuTextureDataLocation = textureStagingBuffer.mapMemory();
                 VkUInt8.Array gpuTextureData = new VkUInt8.Array(gpuTextureDataLocation, textureDataSize);
                 Utilities.bufferedImageToData(textureMipmapBufferedImage, gpuTextureData);
@@ -297,7 +286,7 @@ public class Test {
         VertexBuffer uvBuffer = new VertexBuffer(vk, physicalDevices, device, uvArraySize);
         VertexBuffer colorBuffer = new VertexBuffer(vk, physicalDevices, device, colorArraySize);
 
-        try (StagingBuffer positionStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, positionArraySize)) {
+        try (StagingBuffer positionStagingBuffer = new StagingBuffer(vk, physicalDevice, device, positionArraySize)) {
             VkPointer positionLocation = positionStagingBuffer.mapMemory();
             VkFloat.Array gpuPositionArray = new VkFloat.Array(positionLocation, positionArray.count());
             for(int i = 0; i < positionArray.count(); i++) gpuPositionArray.get(i).setValue(positionArray.get(i).getValue());
@@ -306,7 +295,7 @@ public class Test {
             positionBuffer.setData(positionStagingBuffer, commandPool, queue);
         }
 
-        try (StagingBuffer uvStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, uvArraySize)) {
+        try (StagingBuffer uvStagingBuffer = new StagingBuffer(vk, physicalDevice, device, uvArraySize)) {
             VkPointer uvLocation = uvStagingBuffer.mapMemory();
             VkFloat.Array gpuUvArray = new VkFloat.Array(uvLocation, uvArray.count());
             for(int i = 0; i < uvArray.count(); i++) gpuUvArray.get(i).setValue(uvArray.get(i).getValue());
@@ -315,7 +304,7 @@ public class Test {
             uvBuffer.setData(uvStagingBuffer, commandPool, queue);
         }
 
-        try (StagingBuffer colorStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, colorArraySize)) {
+        try (StagingBuffer colorStagingBuffer = new StagingBuffer(vk, physicalDevice, device, colorArraySize)) {
             VkPointer colorLocation = colorStagingBuffer.mapMemory();
             VkFloat.Array gpuColorArray = new VkFloat.Array(colorLocation, colorArray.count());
             for(int i = 0; i < colorArray.count(); i++) gpuColorArray.get(i).setValue(colorArray.get(i).getValue());
@@ -377,9 +366,9 @@ public class Test {
         Matrix4f matrix = generator.rotateZ(-90.0f);
         int matrixSize = (int) (matrix.count()*VkFloat.sizeof());
 
-        UniformBuffer matrixBuffer = new UniformBuffer(vk, selectedPhysicalDevice, device, matrixSize);
+        UniformBuffer matrixBuffer = new UniformBuffer(vk, physicalDevice, device, matrixSize);
 
-        try (StagingBuffer matrixStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, matrixSize)) {
+        try (StagingBuffer matrixStagingBuffer = new StagingBuffer(vk, physicalDevice, device, matrixSize)) {
             VkPointer uniformBufferMemoryLocation = matrixStagingBuffer.mapMemory();
             VkFloat.Array gpuMatrix = new VkFloat.Array(uniformBufferMemoryLocation, matrix.count());
             for(int i = 0; i < matrix.count(); i++) gpuMatrix.setValue(i, matrix.getValue(i));
@@ -578,7 +567,7 @@ public class Test {
         ///////////////////////////////
         /// FRAMEBUFFER ATTACHMENTS ///
         ///////////////////////////////
-        FramebufferAttachments framebufferAttachments = new FramebufferAttachments(vk, selectedPhysicalDevice, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, true, true);
+        FramebufferAttachments framebufferAttachments = new FramebufferAttachments(vk, physicalDevice, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, true, true);
         framebufferAttachments.getColorAttachment().setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, commandPool, queue);
         framebufferAttachments.getDepthAttachment().setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandPool, queue);
 
@@ -698,7 +687,7 @@ public class Test {
 
         BufferedImage resultBufferedImage = new BufferedImage(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
         int colorAttachmentDataSize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4;
-        try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, colorAttachmentDataSize)) {
+        try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, physicalDevice, device, colorAttachmentDataSize)) {
             framebufferAttachments.getColorAttachment().getData(resultStagingBuffer, 0, commandPool, queue);
 
             VkPointer gpuDataLocation = resultStagingBuffer.mapMemory();
