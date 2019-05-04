@@ -2,6 +2,7 @@ package test.objects;
 
 import cz.mg.vulkan.Vk;
 import cz.mg.vulkan.VkDevice;
+import cz.mg.vulkan.VkPhysicalDevice;
 
 
 public class FramebufferAttachments implements AutoCloseable {
@@ -12,13 +13,13 @@ public class FramebufferAttachments implements AutoCloseable {
     protected final ColorAttachmentImage colorAttachment;
     protected final DepthAttachmentImage depthAttachment;
 
-    public FramebufferAttachments(Vk vk, VkDevice device, int width, int height, boolean color, boolean depth) {
+    public FramebufferAttachments(Vk vk, VkPhysicalDevice physicalDevice, VkDevice device, int width, int height, boolean color, boolean depth) {
         this.vk = vk;
         this.device = device;
         this.width = width;
         this.height = height;
-        this.colorAttachment = color ? new ColorAttachmentImage(vk, device, width, height) : null;
-        this.depthAttachment = depth ? new DepthAttachmentImage(vk, device, width, height) : null;
+        this.colorAttachment = color ? new ColorAttachmentImage(vk, physicalDevice, device, width, height) : null;
+        this.depthAttachment = depth ? new DepthAttachmentImage(vk, physicalDevice, device, width, height) : null;
     }
 
     public int getWidth() {

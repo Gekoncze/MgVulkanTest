@@ -1,7 +1,6 @@
 package test.objects;
 
 import cz.mg.vulkan.*;
-
 import static cz.mg.vulkan.Vk.*;
 
 
@@ -12,7 +11,7 @@ public class Buffer implements AutoCloseable {
     protected final VkDeviceMemory memory;
     protected final int size;
 
-    public Buffer(Vk vk, VkDevice device, int size, int usage) {
+    public Buffer(Vk vk, VkPhysicalDevice physicalDevice, VkDevice device, int size, int usage, int memoryProperties) {
         this.vk = vk;
         this.device = device;
         this.buffer = new VkBuffer();
@@ -28,9 +27,15 @@ public class Buffer implements AutoCloseable {
         VkMemoryRequirements bufferMemoryRequirements = new VkMemoryRequirements();
         vk.vkGetBufferMemoryRequirements(device, buffer, bufferMemoryRequirements);
 
+        int memoryTypeIndex = PhysicalDevice.findMemoryTypeIndex(
+                vk, physicalDevice,
+                bufferMemoryRequirements.getMemoryTypeBitsQ(),
+                memoryProperties
+        );
+
         VkMemoryAllocateInfo memoryAllocateInfo = new VkMemoryAllocateInfo();
         memoryAllocateInfo.setAllocationSize(bufferMemoryRequirements.getSize());
-        memoryAllocateInfo.setMemoryTypeIndex(1); // TODO
+        memoryAllocateInfo.setMemoryTypeIndex(memoryTypeIndex);
 
         vk.vkAllocateMemoryP(device, memoryAllocateInfo, null, memory);
 

@@ -5,7 +5,6 @@ import static cz.mg.vulkan.Vk.*;
 import cz.mg.vulkan.utilities.math.Matrix4f;
 import cz.mg.vulkan.utilities.math.MatrixGenerator;
 import test.objects.*;
-
 import java.awt.image.BufferedImage;
 
 
@@ -181,7 +180,7 @@ public class Test {
         BufferedImage[] textureMipmapBufferedImages = Utilities.generateMipmapImages(Utilities.loadImage(Test.class, "images/spyro.png"));
 
         TextureImage texture = new TextureImage(
-                vk, device,
+                vk, selectedPhysicalDevice, device,
                 textureMipmapBufferedImages[0].getWidth(),
                 textureMipmapBufferedImages[0].getHeight(),
                 textureMipmapBufferedImages.length
@@ -196,7 +195,7 @@ public class Test {
             BufferedImage textureMipmapBufferedImage = textureMipmapBufferedImages[i];
             int textureDataSize = textureMipmapBufferedImage.getWidth() * textureMipmapBufferedImage.getHeight() * 4;
 
-            try (StagingBuffer textureStagingBuffer = new StagingBuffer(vk, device, textureDataSize)) {
+            try (StagingBuffer textureStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, textureDataSize)) {
                 VkPointer gpuTextureDataLocation = textureStagingBuffer.mapMemory();
                 VkUInt8.Array gpuTextureData = new VkUInt8.Array(gpuTextureDataLocation, textureDataSize);
                 Utilities.bufferedImageToData(textureMipmapBufferedImage, gpuTextureData);
@@ -294,11 +293,11 @@ public class Test {
         );
         int colorArraySize = (int) (colorArray.count() * VkFloat.sizeof());
 
-        VertexBuffer positionBuffer = new VertexBuffer(vk, device, positionArraySize);
-        VertexBuffer uvBuffer = new VertexBuffer(vk, device, uvArraySize);
-        VertexBuffer colorBuffer = new VertexBuffer(vk, device, colorArraySize);
+        VertexBuffer positionBuffer = new VertexBuffer(vk, physicalDevices, device, positionArraySize);
+        VertexBuffer uvBuffer = new VertexBuffer(vk, physicalDevices, device, uvArraySize);
+        VertexBuffer colorBuffer = new VertexBuffer(vk, physicalDevices, device, colorArraySize);
 
-        try (StagingBuffer positionStagingBuffer = new StagingBuffer(vk, device, positionArraySize)) {
+        try (StagingBuffer positionStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, positionArraySize)) {
             VkPointer positionLocation = positionStagingBuffer.mapMemory();
             VkFloat.Array gpuPositionArray = new VkFloat.Array(positionLocation, positionArray.count());
             for(int i = 0; i < positionArray.count(); i++) gpuPositionArray.get(i).setValue(positionArray.get(i).getValue());
@@ -307,7 +306,7 @@ public class Test {
             positionBuffer.setData(positionStagingBuffer, commandPool, queue);
         }
 
-        try (StagingBuffer uvStagingBuffer = new StagingBuffer(vk, device, uvArraySize)) {
+        try (StagingBuffer uvStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, uvArraySize)) {
             VkPointer uvLocation = uvStagingBuffer.mapMemory();
             VkFloat.Array gpuUvArray = new VkFloat.Array(uvLocation, uvArray.count());
             for(int i = 0; i < uvArray.count(); i++) gpuUvArray.get(i).setValue(uvArray.get(i).getValue());
@@ -316,7 +315,7 @@ public class Test {
             uvBuffer.setData(uvStagingBuffer, commandPool, queue);
         }
 
-        try (StagingBuffer colorStagingBuffer = new StagingBuffer(vk, device, colorArraySize)) {
+        try (StagingBuffer colorStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, colorArraySize)) {
             VkPointer colorLocation = colorStagingBuffer.mapMemory();
             VkFloat.Array gpuColorArray = new VkFloat.Array(colorLocation, colorArray.count());
             for(int i = 0; i < colorArray.count(); i++) gpuColorArray.get(i).setValue(colorArray.get(i).getValue());
@@ -378,9 +377,9 @@ public class Test {
         Matrix4f matrix = generator.rotateZ(-90.0f);
         int matrixSize = (int) (matrix.count()*VkFloat.sizeof());
 
-        UniformBuffer matrixBuffer = new UniformBuffer(vk, device, matrixSize);
+        UniformBuffer matrixBuffer = new UniformBuffer(vk, selectedPhysicalDevice, device, matrixSize);
 
-        try (StagingBuffer matrixStagingBuffer = new StagingBuffer(vk, device, matrixSize)) {
+        try (StagingBuffer matrixStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, matrixSize)) {
             VkPointer uniformBufferMemoryLocation = matrixStagingBuffer.mapMemory();
             VkFloat.Array gpuMatrix = new VkFloat.Array(uniformBufferMemoryLocation, matrix.count());
             for(int i = 0; i < matrix.count(); i++) gpuMatrix.setValue(i, matrix.getValue(i));
@@ -579,7 +578,7 @@ public class Test {
         ///////////////////////////////
         /// FRAMEBUFFER ATTACHMENTS ///
         ///////////////////////////////
-        FramebufferAttachments framebufferAttachments = new FramebufferAttachments(vk, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, true, true);
+        FramebufferAttachments framebufferAttachments = new FramebufferAttachments(vk, selectedPhysicalDevice, device, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, true, true);
         framebufferAttachments.getColorAttachment().setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, commandPool, queue);
         framebufferAttachments.getDepthAttachment().setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, commandPool, queue);
 
@@ -699,7 +698,7 @@ public class Test {
 
         BufferedImage resultBufferedImage = new BufferedImage(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, BufferedImage.TYPE_4BYTE_ABGR);
         int colorAttachmentDataSize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * 4;
-        try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, device, colorAttachmentDataSize)) {
+        try (StagingBuffer resultStagingBuffer = new StagingBuffer(vk, selectedPhysicalDevice, device, colorAttachmentDataSize)) {
             framebufferAttachments.getColorAttachment().getData(resultStagingBuffer, 0, commandPool, queue);
 
             VkPointer gpuDataLocation = resultStagingBuffer.mapMemory();

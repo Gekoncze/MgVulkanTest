@@ -8,3 +8,9 @@ objects
     render pass
 
 move objects to mgvulkanutilities
+
+for objects, add constructor accepting a parent object and from this get other required objects
+
+separate image and image view ???
+
+make better oop design ???

@@ -17,7 +17,7 @@ public class Image implements AutoCloseable {
     protected final int aspect;
     protected int layout;
 
-    public Image(Vk vk, VkDevice device, int width, int height, int mipLevelCount, int format, int aspect, int usageFlags) {
+    public Image(Vk vk, VkPhysicalDevice physicalDevice, VkDevice device, int width, int height, int mipLevelCount, int format, int aspect, int usageFlags, int memoryProperties) {
         this.vk = vk;
         this.device = device;
         this.image = new VkImage();
@@ -46,8 +46,14 @@ public class Image implements AutoCloseable {
         VkMemoryRequirements imageMemoryRequirements = new VkMemoryRequirements();
         vk.vkGetImageMemoryRequirements(device, image, imageMemoryRequirements);
 
+        int memoryTypeIndex = PhysicalDevice.findMemoryTypeIndex(
+                vk, physicalDevice,
+                imageMemoryRequirements.getMemoryTypeBitsQ(),
+                memoryProperties
+        );
+
         VkMemoryAllocateInfo memoryAllocateInfo = new VkMemoryAllocateInfo();
-        memoryAllocateInfo.setMemoryTypeIndex(0); // TODO
+        memoryAllocateInfo.setMemoryTypeIndex(memoryTypeIndex);
         memoryAllocateInfo.setAllocationSize(imageMemoryRequirements.getSize());
 
         vk.vkAllocateMemoryP(device, memoryAllocateInfo, null, memory);
