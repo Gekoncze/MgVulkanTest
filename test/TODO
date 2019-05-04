@@ -1,16 +1,20 @@
-find memory type index automatically
-    image
-    buffer
-
-objects
-    vertex array ???
-    pipeline
-    render pass
+change test
+    1) window and renderer classes
+    2) re-rendering on window resize
+    3) separate logging
 
 move objects to mgvulkanutilities
+    decision
+        make only oop design
+        make not only oop design, but also utilities classes to work with vk objects
 
-for objects, add constructor accepting a parent object and from this get other required objects
+    design
+        for objects, add constructor accepting a parent object and from this get other required objects
+        try to simplify work with staging buffer
 
-separate image and image view ???
-
-make better oop design ???
+    objects
+        separate image and image view ???
+        vertex array ???
+        pipeline
+        render pass
+        ...
