@@ -18,11 +18,7 @@ public class Test {
     }
 
     public static void cleanup(){
-        VkResourceManager m = VkResourceManager.getInstance();
-        while(m.count() > 0){
-            m.free(false);
-            try {Thread.sleep(0);} catch(InterruptedException e){}
-        }
+        VkResourceManager.getInstance().waitFreeAll();
     }
 
     public static void test() {

@@ -18,3 +18,7 @@ move objects to mgvulkanutilities
         pipeline
         render pass
         ...
+
+add extension methods manually to header files
+    or add check box to include them dynamically
+        might need some structures along with it, like x11 window
