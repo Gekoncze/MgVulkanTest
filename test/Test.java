@@ -107,12 +107,12 @@ public class Test {
             System.out.println("        Vendor: " + new VkVendor(properties.getVendorID()));
             VkPhysicalDeviceMemoryProperties memoryProperties = new VkPhysicalDeviceMemoryProperties();
             vk.vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
-            VkMemoryType.Array memoryTypes = new VkMemoryType.Array(memoryProperties.getMemoryTypes(), memoryProperties.getMemoryTypeCountQ());
+            VkMemoryType.Array memoryTypes = memoryProperties.getMemoryTypesQ();
             System.out.println("        Found " + memoryTypes.count() + " memory types:");
             for(VkMemoryType memoryType : memoryTypes){
                 System.out.println("            " + new VkMemoryPropertyFlagBits(memoryType.getPropertyFlags()) + ", " + memoryType.getHeapIndexQ());
             }
-            VkMemoryHeap.Array memoryHeaps = new VkMemoryHeap.Array(memoryProperties.getMemoryHeaps(), memoryProperties.getMemoryHeapCountQ());
+            VkMemoryHeap.Array memoryHeaps = memoryProperties.getMemoryHeapsQ();
             System.out.println("        Fund " + memoryHeaps.count() + " memory heaps:");
             for(VkMemoryHeap memoryHeap : memoryHeaps){
                 System.out.println("            " + new VkMemoryHeapFlagBits(memoryHeap.getFlags()) + ", " + memoryHeap.getSizeQ());

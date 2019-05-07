@@ -1,7 +1,8 @@
 package test2;
 
+import cz.mg.vulkan.VkVersion;
+import cz.mg.vulkan.oop.DebugReportCallback;
 import cz.mg.vulkan.oop.Instance;
-import cz.mg.vulkan.oop.Version;
 import cz.mg.vulkan.oop.Vulkan;
 import static cz.mg.vulkan.Vk.*;
 import static test2.MainWindow.APPLICATION_NAME;
@@ -13,6 +14,7 @@ public class Renderer {
     private final Logger logger = new Logger();
     private final Vulkan vulkan;
     private final Instance instance;
+    private final DebugReportCallback debugReportCallback;
 
     public Renderer() {
         this.vulkan = new Vulkan();
@@ -30,13 +32,15 @@ public class Renderer {
 
         this.instance = new Instance(
                 vulkan,
-                APPLICATION_NAME, new Version(0, 1, 0),
-                ENGINE_NAME, new Version(0, 1, 0),
+                APPLICATION_NAME, new VkVersion(0, 1, 0),
+                ENGINE_NAME, new VkVersion(0, 1, 0),
                 enabledExtensions,
                 enabledLayers,
-                new Version(1, 0, 0)
+                new VkVersion(1, 0, 0)
         );
         logger.logInstanceCreate();
+
+        debugReportCallback = new DebugReportCallback(instance, VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 
         // TODO
     }

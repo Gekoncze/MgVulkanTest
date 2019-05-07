@@ -4,13 +4,16 @@ change test
     3) separate logging
 
 move objects to mgvulkanutilities
-    decision
-        make only oop design
-        make not only oop design, but also utilities classes to work with vk objects
+    final decision: make only oop handles!
 
-    design
-        for objects, add constructor accepting a parent object and from this get other required objects
-        try to simplify work with staging buffer
+    try to simplify work with staging buffer
+    separate image/buffer and memory ???
+
+    wait for queue before its destruction
+    wait for device before its detruction
+    wait for device or queue before command/command buffer destruction ???
+
+    wrap resource close with once
 
     objects
         separate image and image view ???
@@ -19,6 +22,14 @@ move objects to mgvulkanutilities
         render pass
         ...
 
+    physical device - add more getters
+
 add extension methods manually to header files
     or add check box to include them dynamically
-        might need some structures along with it, like x11 window
+        might need some structures along with it, like x11 window, windows window handle etc.
+
+### DONE
+added few more objects
+    simplified objects architecture
+    creating oop objects only for handles
+    added more todo info

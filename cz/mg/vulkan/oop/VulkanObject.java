@@ -5,25 +5,14 @@ import cz.mg.vulkan.VkObject;
 import cz.mg.vulkan.VkResourceManager;
 
 
-public abstract class VulkanObject<T, P extends VulkanObject> {
-    protected T self = null;
-    protected P parent = null;
-
-    public T getVk(){
-        return self;
-    }
-
-    public P getParent() {
-        return parent;
-    }
-
-    protected void addToResourceManager(){
-        if(self instanceof AutoCloseable){
-            VkResourceManager.getInstance().add(this, self);
+public abstract class VulkanObject {
+    protected void addToResourceManager(Object vk, Object parent){
+        if(vk instanceof AutoCloseable){
+            VkResourceManager.getInstance().add(this, vk);
         }
 
-        if(self instanceof VkObject){
-            VkMemory memory = ((VkObject)self).getVkMemory();
+        if(vk instanceof VkObject){
+            VkMemory memory = ((VkObject)vk).getVkMemory();
             if(memory != null){
                 VkResourceManager.getInstance().add(this, memory);
             }
@@ -32,7 +21,5 @@ public abstract class VulkanObject<T, P extends VulkanObject> {
         if(parent != null){
             VkResourceManager.getInstance().add(this, parent);
         }
-
-        VkResourceManager.getInstance().free();
     }
 }
