@@ -1,0 +1,33 @@
+### LATER
+    re-rendering on window resize
+    physical device - add more getters
+
+### SOON
+    add extension methods manually to header files
+        or add check box to include them dynamically
+            might need some structures along with it, like x11 window, windows window handle etc.
+
+    optimize image data transfer
+
+### NOW
+    move oop to mgvulkanutilities ???
+
+    oop object handles
+        pipeline
+        render pass
+        ...
+
+    extended oop objects
+        framebuffer with images
+        vertex array
+
+
+### DONE
+multiple additions
+    wrapped resource close with once
+    extracted resources from oop objects into new resources package
+    added some more oop classes
+    added some extended objects
+    divided test2 utilities into new 3 classes in new utilities package
+    improved the utilities classes
+    added texture to test2

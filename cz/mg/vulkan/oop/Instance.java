@@ -2,15 +2,18 @@ package cz.mg.vulkan.oop;
 
 import cz.mg.collections.array.Array;
 import cz.mg.vulkan.*;
+import cz.mg.vulkan.oop.resources.VkInstanceResource;
 
 
 public class Instance extends VulkanObject {
     private final Vulkan vulkan;
+    private final Vk v;
     private final VkInstanceResource vk;
 
     public Instance(Vulkan vulkan, String applicationName, VkVersion applicationVersion, String engineName, VkVersion engineVersion, String[] enabledExtensions, String[] enabledLayers, VkVersion apiVersion) {
         this.vulkan = vulkan;
-        this.vk = new VkInstanceResource(vulkan.getVk());
+        this.v = vulkan.getVk();
+        this.vk = new VkInstanceResource(v);
 
         VkApplicationInfo applicationInfo = new VkApplicationInfo();
         applicationInfo.setPApplicationName(applicationName);
@@ -26,8 +29,8 @@ public class Instance extends VulkanObject {
         instanceCreateInfo.setEnabledExtensionCount(enabledExtensions.length);
         instanceCreateInfo.setPpEnabledExtensionNames(new VkString.Array(enabledExtensions));
 
-        vk.vk.vkCreateInstanceP(instanceCreateInfo, null, vk);
-        vk.vk.setInstance(vk);
+        v.vkCreateInstanceP(instanceCreateInfo, null, vk);
+        v.setInstance(vk);
 
         addToResourceManager(vk, vulkan);
     }
@@ -42,25 +45,12 @@ public class Instance extends VulkanObject {
 
     public Array<PhysicalDevice> getPhysicalDevices(){
         VkUInt32 count = new VkUInt32();
-        vk.vk.vkEnumeratePhysicalDevicesP(vk, count, null);
+        v.vkEnumeratePhysicalDevicesP(vk, count, null);
         VkPhysicalDevice.Array physicalDevices = new VkPhysicalDevice.Array(count.getValue());
-        vk.vk.vkEnumeratePhysicalDevicesP(vk, count, physicalDevices);
+        v.vkEnumeratePhysicalDevicesP(vk, count, physicalDevices);
 
         Array<PhysicalDevice> pd = new Array<>(physicalDevices.count());
         for(int i = 0; i < physicalDevices.count(); i++) pd.set(i, new PhysicalDevice(this, physicalDevices.get(i)));
         return pd;
-    }
-
-    private static class VkInstanceResource extends VkInstance implements VulkanResource {
-        public final Vk vk;
-
-        public VkInstanceResource(Vk vk) {
-            this.vk = vk;
-        }
-
-        @Override
-        public void close() {
-            vk.vkDestroyInstance(this, null);
-        }
     }
 }

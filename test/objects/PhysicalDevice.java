@@ -27,7 +27,7 @@ public class PhysicalDevice implements AutoCloseable {
     public static int findMemoryTypeIndex(Vk vk, VkPhysicalDevice physicalDevice, int requiredTypes, int requiredProperties){
         VkPhysicalDeviceMemoryProperties memoryProperties = new VkPhysicalDeviceMemoryProperties();
         vk.vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
-        VkMemoryType.Array memoryTypes = new VkMemoryType.Array(memoryProperties.getMemoryTypes(), memoryProperties.getMemoryTypeCount().getValue());
+        VkMemoryType.Array memoryTypes = memoryProperties.getMemoryTypesQ();
         for(int i = 0; i < memoryTypes.count(); i++){
             if((requiredTypes & (1 << i)) == 0) continue;
             if((memoryTypes.get(i).getPropertyFlagsQ() & requiredProperties) != requiredProperties) continue;

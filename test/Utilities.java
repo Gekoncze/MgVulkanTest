@@ -4,11 +4,9 @@ import cz.mg.collections.list.chainlist.ChainList;
 import cz.mg.vulkan.VkPointer;
 import cz.mg.vulkan.VkUInt32;
 import cz.mg.vulkan.VkUInt8;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
